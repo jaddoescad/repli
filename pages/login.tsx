@@ -58,10 +58,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   if (!user || !user.address) {
     return {
-      redirect: {
-        destination: "/login", // Replace with your login page route
-        permanent: false,
-      },
+      props: {}, // Return empty props if not authenticated
     };
   }
 
