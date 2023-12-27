@@ -42,7 +42,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
         <UserSupabaseProvider>
           <div
             style={{
-              height: "100svh",
+              height: "100vh",
               background: "red",
             }}
             className="flex justify-center items-center w-full bg-gray-200"
