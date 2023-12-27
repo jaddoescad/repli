@@ -82,7 +82,14 @@ const Home: NextPage = () => {
   const { data: session, status } = useSession();
 
   return (
-      <div className="flex flex-col h-full w-full">
+      <div 
+      
+      style={
+        {
+          background: "green",
+        }
+      }
+      className="flex flex-col h-full w-full">
         <TopNavigation />
 
         <ChatList/>
