@@ -1,11 +1,21 @@
-import { getProviders, signIn, useSession } from "next-auth/react";
+import {
+  getProviders,
+  signIn,
+  useSession,
+  ClientSafeProvider,
+} from "next-auth/react";
 import { useContext, useEffect } from "react";
 import { useRouter } from "next/router";
 import { SupabaseContext } from "../provider/UserSupabaseProvider";
 import { updateTwitterHandle } from "../supabase/supabaseFunctions";
 import { useUser } from "@thirdweb-dev/react";
+import { ExtendedUser } from "../types/types";
 
-export default function SignIn({ providers }) {
+export default function SignIn({
+  providers: providers,
+}: {
+  providers: Record<string, ClientSafeProvider>;
+}) {
   const { data: session } = useSession();
   const router = useRouter();
   const supabaseClient = useContext(SupabaseContext);
@@ -13,10 +23,10 @@ export default function SignIn({ providers }) {
 
   useEffect(() => {
     async function saveTwitterNameAndRedirect() {
-      console.log("session", session);
-      if (session && supabaseClient) {
-        const { user } = session;
-        if (user) {
+      if (session && supabaseClient && thirdWebUser?.address) {
+        // Use type assertion here
+        const user = session.user as ExtendedUser;
+        if (user && user.username) {
           await updateTwitterHandle(
             thirdWebUser?.address,
             user.username,
@@ -27,9 +37,7 @@ export default function SignIn({ providers }) {
         }
       }
     }
-
-    // router.push("/welcome");
-
+  
     saveTwitterNameAndRedirect();
   }, [session, router]);
 
@@ -61,7 +69,6 @@ export default function SignIn({ providers }) {
                     address: "address",
                   }
                 );
-                
               }}
             >
               Link your {provider.name}

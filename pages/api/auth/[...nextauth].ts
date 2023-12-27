@@ -1,11 +1,18 @@
 import NextAuth from "next-auth";
 import TwitterProvider from "next-auth/providers/twitter";
-import axios from "axios";
-import needle from "needle";
 import { TwitterProfile } from "next-auth/providers/twitter";
-import { createSupabaseServer } from "../../../supabase/createSupabaseServer";
+import { NextApiRequest, NextApiResponse } from "next";
+import { JWT } from "next-auth/jwt";
+import { User } from "@thirdweb-dev/auth";
+import {ExtendedUser, ExtendedJWT} from '../../../types/types'
 
-export default async function auth(request, response) {
+
+
+
+export default async function auth(
+  request: NextApiRequest,
+  response: NextApiResponse
+) {
   return await NextAuth(request, response, {
     providers: [
       TwitterProvider({
@@ -28,25 +35,28 @@ export default async function auth(request, response) {
       }),
     ],
     callbacks: {
-      async signIn({ user, account, profile, email, credentials }) {
-        console.log("signin", user, account, profile, email, credentials);
-        return true;
-      },
       async jwt({ token, user }) {
-        console.log("jwtuser", token);
         if (user) {
-          token.user = user;
+          const extendedUser = user as ExtendedUser;
+
+          token.user = {
+            id: extendedUser.id.toString(),
+            username: extendedUser.username,
+            name: extendedUser.name,
+          };
         }
-        return token;
+        return token as ExtendedJWT;
       },
       async session({ session, user, token }) {
+        const extToken = token as ExtendedJWT;
+
         return {
           ...session,
           user: {
             ...session.user,
-            id: token.user.id,
-            username: token.user.username,
-            name: token.user.name,
+            id: extToken.id,
+            username: extToken.username,
+            name: extToken.name,
           },
         };
       },

@@ -1,42 +1,3 @@
-// import {
-//   ConnectWallet,
-//   darkTheme,
-// } from "@thirdweb-dev/react";
-// import { NextPage } from "next";
-// import { useSession } from "next-auth/react";
-
-// // Main component
-// const Home: NextPage = () => {
-//   const { data: session, status } = useSession();
-
-//   return (
-//     <div
-//       className="flex flex-col items-center justify-center w-full mt-14"
-//       style={{ height: "100vh" }}
-//     >
-//       <div className="font-bold text-xl text-center">
-//         Welcome {session?.user?.name}
-//       </div>
-//       <ConnectWallet
-//         style={{
-//           minWidth: "200px",
-//           borderRadius: "100px",
-//         }}
-//         theme={darkTheme({
-//           colors: {
-//             primaryButtonBg: "#A873E8",
-//             primaryButtonText: "#FFFFFF",
-//           },
-//         })}
-//         modalSize="compact"
-//         btnTitle={"Sign in"}
-//       />
-//     </div>
-//   );
-// };
-
-// export default Home;
-
 const mockChats = [
   {
     id: 1,
@@ -124,7 +85,7 @@ const Home: NextPage = () => {
       <div className="flex flex-col h-full w-full">
         <TopNavigation />
 
-        <ChatList name={session?.user?.name} />
+        <ChatList/>
 
         <BottomNavigation />
       </div>
@@ -136,11 +97,6 @@ export default Home;
 const TopNavigation = ({}) => {
   const { isLoading, user } = useUser();
   const { data } = useBalance();
-
-  useEffect(() => {
-    console.log("user", user);
-    console.log("data", data);
-  }, [user, data]);
 
   return (
     <div
@@ -231,7 +187,7 @@ const BottomNavigation = () => {
   );
 };
 
-const ChatList = ({ chats }) => {
+const ChatList = () => {
   return (
     <div // Set height to 100% and make it scrollable
       style={{ flexGrow: 1, overflowY: "auto" }}
