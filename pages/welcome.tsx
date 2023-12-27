@@ -82,22 +82,23 @@ const Home: NextPage = () => {
   const { data: session, status } = useSession();
 
   return (
-      <div 
+    <></>
+      // <div 
       
-      style={
-        {
-          background: "green",
-          height: "100%",
-          width: "100%"
-        }
-      }
-      className="flex flex-col">
-        {/* <TopNavigation />
+      // style={
+      //   {
+      //     background: "green",
+      //     height: "100%",
+      //     width: "100%"
+      //   }
+      // }
+      // className="flex flex-col">
+      //   {/* <TopNavigation />
 
-        <ChatList/>
+      //   <ChatList/>
 
-        <BottomNavigation /> */}
-      </div>
+      //   <BottomNavigation /> */}
+      // </div>
   );
 };
 
