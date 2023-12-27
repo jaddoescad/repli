@@ -42,18 +42,16 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
         ]}
       >
         <UserSupabaseProvider>
-          {/* <div className="flex justify-center items-center w-full h-screen bg-gray-200"> */}
-          {/* <div className="flex flex-col items-center bg-white w-full h-full max-h-[900px] max-w-[400px] justify-between rounded-md"> */}
           <div
             style={{
               height: "100svh",
             }}
-            className="flex justify-center items-center bg-gray-200 w-full"
+            className="flex justify-center items-center w-full bg-gray-200"
           >
-            <Component {...pageProps} />
+            <div className="flex flex-col items-center bg-white w-full h-full max-h-[900px] max-w-[400px] justify-between rounded-md">
+              <Component {...pageProps} />
+            </div>
           </div>
-          {/* </div> */}
-          {/* </div> */}
         </UserSupabaseProvider>
       </ThirdwebProvider>
     </SessionProvider>
