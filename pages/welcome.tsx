@@ -87,14 +87,16 @@ const Home: NextPage = () => {
       style={
         {
           background: "green",
+          height: "100%",
+          width: "100%"
         }
       }
-      className="flex flex-col h-full w-full">
-        <TopNavigation />
+      className="flex flex-col">
+        {/* <TopNavigation />
 
         <ChatList/>
 
-        <BottomNavigation />
+        <BottomNavigation /> */}
       </div>
   );
 };
