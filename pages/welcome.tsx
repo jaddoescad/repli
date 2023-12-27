@@ -107,8 +107,8 @@ const TopNavigation = ({}) => {
 
   return (
     <div
-      style={{ height: "60px" }}
-      className="w-full bg-white py-4 px-6 text-blac flex justify-between"
+      style={{ height: "60px", background: "teal" }}
+      className="w-full bg-white py-4 px-6 text-black flex justify-between"
     >
       <div>
         <img
@@ -178,7 +178,7 @@ const BottomNavigation = () => {
 
   return (
     <div
-      style={{ height: "60px" }}
+      style={{ height: "60px", background: "maroon" }}
       className="w-full bg-white py-2 px-6 text-black flex justify-between items-center border-t-2 border-gray-300"
     >
       {navigationItems.map((item, index) => (
