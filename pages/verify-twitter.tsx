@@ -4,42 +4,41 @@ import {
   useSession,
   ClientSafeProvider,
 } from "next-auth/react";
-import { useContext, useEffect } from "react";
-import { useRouter } from "next/router";
-import { SupabaseContext } from "../provider/UserSupabaseProvider";
-import { updateTwitterHandle } from "../supabase/supabaseFunctions";
-import { useUser } from "@thirdweb-dev/react";
-import { ExtendedUser } from "../types/types";
+// import { useContext, useEffect } from "react";
+// import { useRouter } from "next/router";
+// import { SupabaseContext } from "../provider/UserSupabaseProvider";
+// import { updateTwitterHandle } from "../supabase/supabaseFunctions";
+// import { useUser } from "@thirdweb-dev/react";
+// import { ExtendedUser } from "../types/types";
 
 export default function SignIn({
   providers: providers,
 }: {
   providers: Record<string, ClientSafeProvider>;
 }) {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const supabaseClient = useContext(SupabaseContext);
-  const { isLoading, user: thirdWebUser } = useUser();
+  // const { data: session } = useSession();
+  // const router = useRouter();
+  // const supabaseClient = useContext(SupabaseContext);
+  // const { isLoading, user: thirdWebUser } = useUser();
 
-  useEffect(() => {
-    async function saveTwitterNameAndRedirect() {
-      if (session && supabaseClient && thirdWebUser?.address) {
-        // Use type assertion here
-        const user = session.user as ExtendedUser;
-        if (user && user.username) {
-          await updateTwitterHandle(
-            thirdWebUser?.address,
-            user.username,
-            user.name,
-            user.id,
-            supabaseClient
-          );
-        }
-      }
-    }
+  // useEffect(() => {
+  //   async function saveTwitterNameAndRedirect() {
+  //     if (session && supabaseClient && thirdWebUser?.address) {
+  //       const user = session.user as ExtendedUser;
+  //       if (user && user.username) {
+  //         await updateTwitterHandle(
+  //           thirdWebUser?.address,
+  //           user.username,
+  //           user.name,
+  //           user.id,
+  //           supabaseClient
+  //         );
+  //       }
+  //     }
+  //   }
   
-    saveTwitterNameAndRedirect();
-  }, [session, router]);
+  //   saveTwitterNameAndRedirect();
+  // }, [session, router]);
 
   return (
     <>
