@@ -21,7 +21,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     <SessionProvider session={session}>
       <ThirdwebProvider
         activeChain="mumbai"
-        clientId="8b7e2a4791eb4838a97eaba1ea697fee"
+        clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
         locale={en()}
         authConfig={{
           authUrl: "/api/twauth",

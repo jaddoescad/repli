@@ -10,7 +10,7 @@ export const { ThirdwebAuthHandler, getUser } = ThirdwebAuth({
     process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || "http://localhost:3000",
   wallet: new PrivateKeyWallet(
     process.env.THIRDWEB_AUTH_PRIVATE_KEY ||
-      "708c07661bd3bccce29545f340c4a6cd3dc435d29ebcf9798c2c3884d8c7e68f"
+      ""
   ),
   callbacks: {
     onLogin: async (address) => {
