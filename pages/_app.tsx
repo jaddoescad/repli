@@ -43,7 +43,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       >
         <UserSupabaseProvider>
           <main className="flex justify-center items-center w-full h-screen bg-gray-200">
-            <div className="flex flex-col items-center bg-white w-full h-full max-h-[550px] max-w-[310px] justify-between rounded-md">
+            <div className="flex flex-col items-center bg-white w-full h-full max-h-[900px] max-w-[400px] justify-between rounded-md">
               <Component {...pageProps} />
             </div>
           </main>
