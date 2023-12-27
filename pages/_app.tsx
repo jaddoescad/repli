@@ -13,7 +13,6 @@ import "../styles/globals.css";
 import { ACCOUNT_FACTORY_ADDRESS } from "../constants/addresses";
 import { UserSupabaseProvider } from "../provider/UserSupabaseProvider";
 
-
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SessionProvider session={session}>
@@ -43,13 +42,16 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
           <div
             style={{
               height: "100svh",
-              background: "red"
+              background: "red",
             }}
             className="flex justify-center items-center w-full bg-gray-200"
           >
-            <div          style={{
-              background: "red"
-            }}className="flex flex-col items-center bg-white w-full h-full max-h-[900px] max-w-[400px] justify-between rounded-md">
+            <div
+              style={{
+                background: "red",
+              }}
+              className="flex flex-col items-center bg-white w-full h-full max-h-[900px] max-w-[400px] justify-between rounded-md"
+            >
               <Component {...pageProps} />
             </div>
           </div>
@@ -58,6 +60,5 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     </SessionProvider>
   );
 }
-
 
 export default MyApp;
