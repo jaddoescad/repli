@@ -13,8 +13,6 @@ import "../styles/globals.css";
 import { ACCOUNT_FACTORY_ADDRESS } from "../constants/addresses";
 import { UserSupabaseProvider } from "../provider/UserSupabaseProvider";
 
-// Supabase context
-const SupabaseContext = createContext(null);
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
