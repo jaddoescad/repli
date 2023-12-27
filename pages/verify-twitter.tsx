@@ -42,7 +42,11 @@ export default function SignIn({
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center w-full mt-14">
+      <div   
+       style={{
+        background: "green"
+      }}
+      className="flex flex-col items-center justify-center w-full mt-14">
         <img src="/logo.png" alt="Logo" width="110" height="110" />
         <h1 className="text-sm font-medium text-gray-500">
           Attach value to every message
