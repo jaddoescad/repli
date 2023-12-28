@@ -76,6 +76,7 @@ import { useSession } from "next-auth/react";
 import { FaAddressBook, FaComments, FaUser } from "react-icons/fa";
 import chatDollarIcon from "../bottom-navigation-icons/chatdollar.png";
 import { useEffect } from "react";
+import BottomNavigation from "../components/BottomNavigation";
 
 // Main component
 const Home: NextPage = () => {
@@ -84,9 +85,11 @@ const Home: NextPage = () => {
   return (
     <div
       style={{
-        background: "green",
-        height: "100%",
+        height: "100vh",
         width: "100%",
+        backgroundColor: "red",
+        display: "flex",
+        flexDirection: "column",
       }}
       // className="flex flex-col"
     >
@@ -107,7 +110,7 @@ const TopNavigation = ({}) => {
 
   return (
     <div
-      style={{ height: "60px", background: "teal" }}
+      style={{ height: "60px" }}
       className="w-full bg-white py-4 px-6 text-black flex justify-between"
     >
       <div>
@@ -128,7 +131,6 @@ const TopNavigation = ({}) => {
         )}
         style={{
           minWidth: "50px",
-          // borderRadius: "50px",
         }}
         theme={darkTheme({
           colors: {
@@ -143,56 +145,6 @@ const TopNavigation = ({}) => {
   );
 };
 
-const BottomNavigation = () => {
-  const navigationItems = [
-    {
-      icon: (
-        <img
-          src={"/bottom-navigation-icons/searchuser.png"}
-          alt="Contacts"
-          style={{ width: "26px", height: "26px" }} // Adjust icon size here
-        />
-      ),
-      label: "Contacts",
-    },
-    {
-      icon: (
-        <img
-          src={"/bottom-navigation-icons/chatdollar.png"}
-          alt="Chat Dollar"
-          style={{ width: "26px", height: "26px" }} // Adjust icon size here
-        />
-      ),
-      label: "Chat",
-    },
-    {
-      icon: (
-        <img
-          src={"/bottom-navigation-icons/profile.png"}
-          style={{ width: "26px", height: "26px" }} // Adjust icon size here
-        />
-      ),
-      label: "Profile",
-    },
-  ];
-
-  return (
-    <div
-      style={{ height: "60px", background: "maroon" }}
-      className="w-full bg-white py-2 px-6 text-black flex justify-between items-center border-t-2 border-gray-300"
-    >
-      {navigationItems.map((item, index) => (
-        <button
-          key={index}
-          className="flex flex-col items-center justify-center"
-        >
-          <span>{item.icon}</span>
-          <span style={{ fontSize: "12px" }}>{item.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
 
 const ChatList = () => {
   return (

@@ -1,8 +1,4 @@
-import {
-  ConnectWallet,
-  darkTheme,
-  useUser,
-} from "@thirdweb-dev/react";
+import { ConnectWallet, darkTheme, useUser } from "@thirdweb-dev/react";
 import { GetServerSideProps, NextPage } from "next";
 import { getUser } from "./api/twauth/[...thirdweb]";
 import { checkTwitterHandle } from "../supabase/supabaseFunctions";
@@ -14,7 +10,7 @@ const Home: NextPage = () => {
   const { isLoading, user } = useUser();
 
   return (
-    <>
+    <div className="flex flex-col items-center bg-white w-full h-full justify-between rounded-md">
       <div className="flex flex-col items-center justify-center w-full mt-14">
         <img src="/logo.png" alt="Logo" width="110" height="110" />
         <h1 className="text-sm font-medium text-gray-500">
@@ -46,7 +42,7 @@ const Home: NextPage = () => {
           Privacy Policy
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -41,7 +41,9 @@ export default function SignIn({
   }, [session, router]);
 
   return (
-    <>
+    <div
+    className="flex flex-col items-center bg-white w-full h-full justify-between rounded-md"
+  >
       <div className="flex flex-col items-center justify-center w-full mt-14">
         <img src="/logo.png" alt="Logo" width="110" height="110" />
         <h1 className="text-sm font-medium text-gray-500">
@@ -75,7 +77,7 @@ export default function SignIn({
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
