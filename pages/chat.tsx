@@ -90,11 +90,15 @@ const Home: NextPage = () => {
       }}
       // className="flex flex-col"
     >
-      <TopNavigation />
+      <div
+        className="flex flex-col flex-grow"
+      >
+        <TopNavigation />
 
-      <ChatList />
+        <ChatList />
 
-      <BottomNavigation />
+        <BottomNavigation />
+      </div>
     </div>
   );
 };
@@ -142,26 +146,25 @@ const TopNavigation = ({}) => {
   );
 };
 
-
 const ChatList = () => {
   return (
     <div // Set height to 100% and make it scrollable
       style={{ flexGrow: 1, overflowY: "auto" }}
       className="flex flex-col items-center w-full"
     >
-        {mockChats.map((chat) => (
-          <div key={chat.id} className="flex items-center p-4 border-b w-full">
-            <img
-              src={chat.profileImage}
-              alt="Profile"
-              className="w-10 h-10 rounded-full object-cover"
-            />
-            <div className="ml-4">
-              <div className="font-bold">{chat.name}</div>
-              <div className="text-gray-500">{chat.lastMessage}</div>
-            </div>
+      {mockChats.map((chat) => (
+        <div key={chat.id} className="flex items-center p-4 border-b w-full">
+          <img
+            src={chat.profileImage}
+            alt="Profile"
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div className="ml-4">
+            <div className="font-bold">{chat.name}</div>
+            <div className="text-gray-500">{chat.lastMessage}</div>
           </div>
-        ))}
+        </div>
+      ))}
     </div>
   );
 };
