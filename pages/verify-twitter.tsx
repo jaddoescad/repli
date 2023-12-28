@@ -64,7 +64,7 @@ export default function SignIn({
                 const res = await signIn(
                   provider.id,
                   {
-                    callbackUrl: "/welcome",
+                    callbackUrl: "/profile",
                   },
                   {
                     address: "address",
