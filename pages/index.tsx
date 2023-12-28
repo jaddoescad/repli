@@ -52,34 +52,34 @@ const Home: NextPage = () => {
 
 export default Home;
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const user = await getUser(context.req); // Implement this function as needed
-  const supabaseServer = createSupabaseServer();
+// export const getServerSideProps: GetServerSideProps = async (context) => {
+//   const user = await getUser(context.req); // Implement this function as needed
+//   const supabaseServer = createSupabaseServer();
 
-  if (!user || !user.address) {
-    return {
-      props: {}, // Return empty props if not authenticated
-    };
-  }
+//   if (!user || !user.address) {
+//     return {
+//       props: {}, // Return empty props if not authenticated
+//     };
+//   }
 
-  const checkTwitterHandleResult = await checkTwitterHandle(
-    user?.address,
-    supabaseServer
-  );
+//   const checkTwitterHandleResult = await checkTwitterHandle(
+//     user?.address,
+//     supabaseServer
+//   );
 
-  if (
-    user?.session.supabaseToken &&
-    !checkTwitterHandleResult?.[0]?.twitterHandle
-  ) {
-    return {
-      redirect: {
-        destination: "/verify-twitter", // Redirect to home if authenticated
-        permanent: false,
-      },
-    };
-  }
+//   if (
+//     user?.session.supabaseToken &&
+//     !checkTwitterHandleResult?.[0]?.twitterHandle
+//   ) {
+//     return {
+//       redirect: {
+//         destination: "/verify-twitter", // Redirect to home if authenticated
+//         permanent: false,
+//       },
+//     };
+//   }
 
-  return {
-    props: {}, // Return empty props if not authenticated
-  };
-};
+//   return {
+//     props: {}, // Return empty props if not authenticated
+//   };
+// };
