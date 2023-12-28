@@ -92,9 +92,9 @@ const Home: NextPage = () => {
     >
       <TopNavigation />
 
-      {/* <ChatList /> */}
+      <ChatList />
 
-      <BottomNavigation />
+      {/* <BottomNavigation /> */}
     </div>
   );
 };
