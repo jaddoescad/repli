@@ -93,11 +93,11 @@ const Home: NextPage = () => {
       }}
       // className="flex flex-col"
     >
-      <TopNavigation />
+      {/* <TopNavigation />
 
       <ChatList />
 
-      <BottomNavigation />
+      <BottomNavigation /> */}
     </div>
   );
 };
