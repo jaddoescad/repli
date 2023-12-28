@@ -88,8 +88,8 @@ const Home: NextPage = () => {
         height: "100vh",
         width: "100%",
         backgroundColor: "red",
-        display: "flex",
-        flexDirection: "column",
+        // display: "flex",
+        // flexDirection: "column",
       }}
       // className="flex flex-col"
     >
