@@ -90,9 +90,9 @@ const Home: NextPage = () => {
       }}
       // className="flex flex-col"
     >
-      {/* <TopNavigation />
+      <TopNavigation />
 
-      <ChatList />
+      {/* <ChatList />
 
       <BottomNavigation /> */}
     </div>
