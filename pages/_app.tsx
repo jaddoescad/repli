@@ -42,6 +42,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
           <div
             style={{
               height: "100svh",
+              width: "100vw",
               background: "red",
             }}
             // className="flex justify-center items-center w-full bg-gray-200"
