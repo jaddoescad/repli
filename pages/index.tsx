@@ -87,12 +87,23 @@ const Home: NextPage = () => {
       style={{
         height: "100vh",
         width: "100%",
-        backgroundColor: "red",
+        backgroundColor: "blue",
         // display: "flex",
         // flexDirection: "column",
       }}
       // className="flex flex-col"
     >
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "red",
+        }}
+      >
+
+
+      </div>
       {/* <TopNavigation />
 
       <ChatList />
