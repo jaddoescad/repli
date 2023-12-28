@@ -39,13 +39,13 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
         ]}
       >
         <UserSupabaseProvider>
-          {/* <div
+          <div
             style={{
               height: "100svh",
               background: "red",
             }}
-            className="flex justify-center items-center w-full bg-gray-200"
-          > */}
+            // className="flex justify-center items-center w-full bg-gray-200"
+          >
             <div
               style={{
                 background: "red",
@@ -54,7 +54,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
             >
               <Component {...pageProps} />
             </div>
-          {/* </div> */}
+          </div>
         </UserSupabaseProvider>
       </ThirdwebProvider>
     </SessionProvider>
