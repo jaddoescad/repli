@@ -1,176 +1,124 @@
-const mockChats = [
-  {
-    id: 1,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    lastMessage: "Hey, how are you?",
-  },
-  {
-    id: 2,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
-  },
-  {
-    id: 3,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
-  },
-  {
-    id: 1,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    lastMessage: "Hey, how are you?",
-  },
-  {
-    id: 2,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
-  },
-  {
-    id: 3,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
-  },
-  {
-    id: 1,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    lastMessage: "Hey, how are you?",
-  },
-  {
-    id: 2,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
-  },
-  {
-    id: 3,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
-  },
-  // Add more chat objects as needed
-];
-
 import {
   ConnectWallet,
   darkTheme,
+  useAddress,
+  useAuth,
   useUser,
-  useBalance,
 } from "@thirdweb-dev/react";
-import { NextPage } from "next";
-import { useSession } from "next-auth/react";
-import { FaAddressBook, FaComments, FaUser } from "react-icons/fa";
-import chatDollarIcon from "../bottom-navigation-icons/chatdollar.png";
-import { useEffect } from "react";
-import BottomNavigation from "../components/BottomNavigation";
+import React, { useEffect } from "react";
+import initializeFirebaseClient from "../firebase/initFirebase";
+import useFirebaseUser from "../firebase/useFirebaseUser";
+import useFirebaseDocument from "../firebase/useFirebaseUserDocument";
+import { useRouter } from "next/router";
+import {
+  checkTwitterHandleExistsClientSide,
+  signIn,
+} from "../firebase/firebaseClientFunctions";
+import initializeFirebaseServer from "../firebase/initFirebaseAdmin";
+import { GetServerSidePropsContext } from "next";
+import { checkTwitterHandle, verifyAuthentication } from "../utils/authUtils";
 
-// Main component
-const Home: NextPage = () => {
-  const { data: session, status } = useSession();
+export default function Login() {
+  const thirdwebAuth = useAuth();
+  const address = useAddress();
+  const { auth, db } = initializeFirebaseClient();
+  const { user, isLoading: loadingAuth } = useFirebaseUser();
+  const { document, isLoading: loadingDocument } = useFirebaseDocument();
+  const { isLoading, user: thirdWebUser } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleThirdWebUser = async () => {
+      if (thirdWebUser && thirdWebUser?.session) {
+        console.log("thirdWebUser", thirdWebUser);
+        try {
+          const session = thirdWebUser.session as { firtoken: string };
+
+
+          await signIn(session?.firtoken, auth, db);
+          //check if twitter handle exists
+          const twitterHandleExists = await checkTwitterHandleExistsClientSide(
+            db,
+            thirdWebUser?.address
+          );
+          if (twitterHandleExists) {
+            router.push("/profile");
+          } else {
+            router.push("/twitterauth");
+          }
+        } catch (error) {
+          console.error(error);
+          // Display an alert with the error message
+        }
+      }
+    };
+
+    handleThirdWebUser();
+  }, [thirdWebUser]);
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        width: "100%",
-        // display: "flex",
-        // flexDirection: "column",
-      }}
-      // className="flex flex-col"
-    >
-      <div
-        style={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <TopNavigation />
-
-        <ChatList />
-
-        <BottomNavigation />
+    <div className="flex flex-col items-center bg-white w-full h-full justify-between rounded-md">
+      <div className="flex flex-col items-center justify-center w-full mt-14">
+        <img src="/logo.png" alt="Logo" width="110" height="110" />
+        <h1 className="text-sm font-medium text-gray-500">
+          Attach value to every message
+        </h1>
       </div>
-    </div>
-  );
-};
-
-export default Home;
-
-const TopNavigation = ({}) => {
-  const { isLoading, user } = useUser();
-  const { data } = useBalance();
-
-  return (
-    <div
-      style={{ height: "60px" }}
-      className="w-full bg-white py-4 px-6 text-black flex justify-between"
-    >
-      <div>
-        <img
-          src="logoside.png"
-          alt="Logo"
-          className="logo"
-          style={{ height: "40px" }}
+      <div className="flex flex-col items-center justify-center w-full gap-2 mb-6">
+        <ConnectWallet
+          style={{
+            minWidth: "200px",
+            borderRadius: "100px",
+          }}
+          theme={darkTheme({
+            colors: {
+              primaryButtonBg: "#A873E8",
+              primaryButtonText: "#FFFFFF",
+            },
+          })}
+          auth={{
+            loginOptional: false,
+          }}
+          modalSize="compact"
+          btnTitle={"Sign in"}
         />
-      </div>
-      <ConnectWallet
-        detailsBtn={() => (
-          <button className="border-2 border-gray-700 rounded-full p-2">
-            {`
-    ${data?.value} ${data?.name}
-    `}
-          </button>
-        )}
-        style={{
-          minWidth: "50px",
-        }}
-        theme={darkTheme({
-          colors: {
-            primaryButtonBg: "#A873E8",
-            primaryButtonText: "#FFFFFF",
-          },
-        })}
-        modalSize="compact"
-        btnTitle={"Sign in"}
-      />
-    </div>
-  );
-};
-
-const ChatList = () => {
-  return (
-    <div // Set height to 100% and make it scrollable
-      style={{ flexGrow: 1, overflowY: "auto" }}
-      className="flex flex-col items-center w-full"
-    >
-      {mockChats.map((chat) => (
-        <div key={chat.id} className="flex items-center p-4 border-b w-full">
-          <img
-            src={chat.profileImage}
-            alt="Profile"
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div className="ml-4">
-            <div className="font-bold">{chat.name}</div>
-            <div className="text-gray-500">{chat.lastMessage}</div>
-          </div>
+        <div className="w-1/2 h-1/2 flex justify-center items-center text-sm">
+          Privacy Policy
         </div>
-      ))}
+      </div>
     </div>
   );
+}
+
+
+
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  try {
+    const { db } = initializeFirebaseServer();
+    const user = await verifyAuthentication(ctx);
+
+    if (!user) {
+      return { props: {} };
+    }
+
+    const twitterHandleExists = await checkTwitterHandle(db, user.address);
+
+    if (user && twitterHandleExists) {
+      return {
+        redirect: {
+          destination: "/profile",
+          permanent: false,
+        },
+      };
+    } else {
+      return {
+        redirect: {
+          destination: "/twitterauth",
+          permanent: false,
+        },
+      };
+    }
+  } catch (err) {
+    return { props: {} };
+  }
 };

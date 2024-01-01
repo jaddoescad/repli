@@ -4,164 +4,138 @@ const mockChats = [
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "John Doe",
-    lastMessage: "Hey, how are you?",
+    rewards: "100",
   },
   {
     id: 2,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
+    rewards: "200",
   },
   {
     id: 3,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
+    rewards: "300",
   },
   {
-    id: 1,
+    id: 4,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "John Doe",
-    lastMessage: "Hey, how are you?",
+    rewards: "100",
   },
   {
-    id: 2,
+    id: 5,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
+    rewards: "200",
   },
   {
-    id: 3,
+    id: 6,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
+    rewards: "300",
   },
   {
-    id: 1,
+    id: 7,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "John Doe",
-    lastMessage: "Hey, how are you?",
+    rewards: "100"
   },
   {
-    id: 2,
+    id: 8,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Jane Smith",
-    lastMessage: "Are you free tomorrow?",
+    rewards: "200"
   },
   {
-    id: 3,
+    id: 9,
     profileImage:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
     name: "Mike Johnson",
-    lastMessage: "Let's meet for lunch!",
+    rewards: "300"
   },
   // Add more chat objects as needed
 ];
 
-import {
-  ConnectWallet,
-  darkTheme,
-  useUser,
-  useBalance,
-} from "@thirdweb-dev/react";
+interface User {
+  address: string;
+  avatarUrl: string;
+  twitterName: string;
+  twitterHandle: string;
+}
+
+
 import { NextPage } from "next";
-import { useSession } from "next-auth/react";
-import { FaAddressBook, FaComments, FaUser } from "react-icons/fa";
-import chatDollarIcon from "../bottom-navigation-icons/chatdollar.png";
-import { useEffect } from "react";
 import BottomNavigation from "../components/BottomNavigation";
+import TopNavigation from "../components/TopNavigation";
+import MainWrapper from "../wrappers/MainWrapper";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAddress } from "@thirdweb-dev/react";
+import { getUsersWithPagination } from "../firebase/firebaseClientFunctions";
+import initializeFirebaseClient from "../firebase/initFirebase";
+import { DocumentData } from "firebase-admin/firestore";
 
 // Main component
 const Home: NextPage = () => {
-  const { data: session, status } = useSession();
-
   return (
-    <div
-      style={{
-        height: "100%",
-        width: "100%",
-      }}
-      // className="flex flex-col"
-    >
+    <MainWrapper>
       <TopNavigation />
 
       <ChatList />
 
       <BottomNavigation />
-    </div>
+    </MainWrapper>
   );
 };
 
 export default Home;
 
-const TopNavigation = ({}) => {
-  const { isLoading, user } = useUser();
-  const { data } = useBalance();
+
+const ChatList = () => {
+  const address = useAddress();
+  const { db } = initializeFirebaseClient();
+  //create state for users
+  const [users, setUsers] = useState<DocumentData>([]);
+
+  useEffect(() => {
+    const getUsers = async () => {
+      if (!address) return;
+      const users = await getUsersWithPagination(db, address);
+      setUsers(users);
+    };
+
+    getUsers();
+  }
+  , [address]);
 
   return (
     <div
-      style={{ height: "60px" }}
-      className="w-full bg-white py-4 px-6 text-black flex justify-between"
-    >
-      <div>
-        <img
-          src="logoside.png"
-          alt="Logo"
-          className="logo"
-          style={{ height: "40px" }}
-        />
-      </div>
-      <ConnectWallet
-        detailsBtn={() => (
-          <button className="border-2 border-gray-700 rounded-full p-2">
-            {`
-    ${data?.value} ${data?.name}
-    `}
-          </button>
-        )}
-        style={{
-          minWidth: "50px",
-        }}
-        theme={darkTheme({
-          colors: {
-            primaryButtonBg: "#A873E8",
-            primaryButtonText: "#FFFFFF",
-          },
-        })}
-        modalSize="compact"
-        btnTitle={"Sign in"}
-      />
-    </div>
-  );
-};
-
-
-const ChatList = () => {
-  return (
-    <div // Set height to 100% and make it scrollable
       style={{ flexGrow: 1, overflowY: "auto" }}
       className="flex flex-col items-center w-full"
     >
-        {mockChats.map((chat) => (
-          <div key={chat.id} className="flex items-center p-4 border-b w-full">
+      {users.map((user: User) => (
+        <Link key={user.address} href={`/chat/${user.address}`} className="flex items-center p-4 border-b w-full">
             <img
-              src={chat.profileImage}
+              src={user.avatarUrl}
               alt="Profile"
               className="w-10 h-10 rounded-full object-cover"
             />
             <div className="ml-4">
-              <div className="font-bold">{chat.name}</div>
-              <div className="text-gray-500">{chat.lastMessage}</div>
+              <div className="font-bold">{user.twitterName}</div>
+              <div className="text-gray-500">{`@${user.twitterHandle}`}</div>
             </div>
-          </div>
-        ))}
+        </Link>
+      ))}
     </div>
   );
 };
+
