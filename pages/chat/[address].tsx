@@ -124,8 +124,13 @@ const TopNavigation = ({
     console.log("chatUser", chatUser);
   }, [chatUser]);
 
+  const handleTouchMove = (e) => {
+    e.stopPropagation();
+  };
+
   return (
     <div
+      onTouchMove={handleTouchMove}
       style={{
         borderBottom: "1px solid #000000",
         height: "80px",
