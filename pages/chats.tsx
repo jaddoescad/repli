@@ -22,11 +22,9 @@ const Home: NextPage = () => {
 };
 
 export default Home;
-
 const ChatList = () => {
   const { db } = initializeFirebaseClient();
   const address = useAddress();
-
   const [chats, setChats] = useState<any[]>([]);
 
   useEffect(() => {
@@ -37,6 +35,10 @@ const ChatList = () => {
     };
     handleGetMyChatRooms();
   }, [address]);
+
+  useEffect(() => {
+    console.log("chats", chats);
+  }, [chats]);
 
   return (
     <div
@@ -51,21 +53,32 @@ const ChatList = () => {
         chats.map((chat) => (
           <Link
             key={chat.id}
-            href={`/chat/${chat.id}`}
+            href={`/chat/${chat.otherParticipant.address}`}
             className="flex items-center p-4 border-b w-full"
           >
             <img
-              src={chat.profileImage}
+              src={chat.otherParticipant.image}
               alt="Profile"
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover mr-4"
             />
-            <div className="ml-4">
-              <div className="font-bold">{chat.name}</div>
-              <div className="text-gray-500">{`Rewards: ${chat.rewards} USDC`}</div>
+            <div>
+              <div className="flex items-center">
+                <div className="font-bold">{chat.otherParticipant.name}</div>
+                <div
+                  style={{ fontSize: 12 }}
+                  className="text-gray-600 ml-1 "
+                >{`@${chat.otherParticipant.handle}`}</div>
+              </div>
+
+              <div className="text-gray-500">{chat.lastMessage}</div>
+              <div
+                style={{ fontSize: 12, marginTop: 10 }}
+              className="text-gray-500">{chat.lastMessageTimestamp}</div>
+
             </div>
           </Link>
         ))
       )}
     </div>
   );
-}
+};
