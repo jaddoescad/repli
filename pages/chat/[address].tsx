@@ -2,8 +2,8 @@ import { NextPage } from "next";
 import MainWrapper from "../../wrappers/MainWrapper";
 import Link from "next/link";
 import initializeFirebaseClient from "../../firebase/initFirebase";
-import { useAddress } from "@thirdweb-dev/react";
-import { useEffect, useRef, useState } from "react";
+import { useAddress, useContract, useContractWrite } from "@thirdweb-dev/react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import {
   getChatRoomId,
@@ -31,7 +31,7 @@ const Home: NextPage = () => {
 
   const [chat, setChat] = useState<any[]>([]);
   const [chatUser, setChatUser] = useState<ChatUser | null>(null);
-  
+
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
 
@@ -71,7 +71,7 @@ const Home: NextPage = () => {
 
 export default Home;
 
-const ChatList = ({ chat, myAddress }: { chat: any[], myAddress: string }) => {
+const ChatList = ({ chat, myAddress }: { chat: any[]; myAddress: string }) => {
   const groupMessagesByDate = (messages: any[]) => {
     return messages.reduce((groups: { [key: string]: any[] }, message: any) => {
       const date = new Date(message.createdAt.seconds * 1000).toDateString();
@@ -124,7 +124,7 @@ const TopNavigation = ({
     console.log("chatUser", chatUser);
   }, [chatUser]);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: any) => {
     e.stopPropagation();
   };
 
@@ -153,7 +153,7 @@ const TopNavigation = ({
       />
       <div style={{ display: "flex", alignItems: "center" }}>
         <img
-          src={chatUser.avatarUrl}
+          src={chatUser?.avatarUrl}
           alt="Avatar"
           style={{
             width: "40px",
@@ -185,7 +185,18 @@ const BottomNavigation = () => {
   const { db } = initializeFirebaseClient();
   const myAddress = useAddress();
   const { address } = router.query;
-
+  const contractAddress = "0x286fB75636783C78802cf68A9581320a47B5aDf9";
+  const { contract } = useContract(contractAddress);
+  const {
+    mutateAsync,
+    isLoading,
+    error,
+    isSuccess,
+    status,
+    data,
+    failureReason,
+    variables,
+  } = useContractWrite(contract, "deposit");
   useEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = "25px";
@@ -193,11 +204,40 @@ const BottomNavigation = () => {
     }
   }, [text]);
 
+  useEffect(() => {
+    console.log("data", data);
+  }, [data]);
+
+  useEffect(() => {
+    console.log("status", status);
+  }, [status]);
+
+  useEffect(() => {
+    console.log("error", error);
+  }, [error]);
+
+  useEffect(() => {
+    console.log("failureReason", failureReason);
+  }, [failureReason]);
+
+  useEffect(() => {
+    console.log("variables", variables);
+  }, [variables]);
+
+  useEffect(() => {
+    console.log("isSuccess", isSuccess);
+  }, [isSuccess]);
+
+  useEffect(() => {
+    console.log("isLoading", isLoading);
+  }, [isLoading]);
+  
+
   // Function to handle send button click
   const handleSend = () => {
     // Implement your send action here
     if (!address || typeof address !== "string" || !myAddress) return;
-    sendMessage(db, myAddress, address, text);
+    sendMessage(db, myAddress, address, text, mutateAsync, 0.000001);
     setText(""); // Clear the text area after sending
   };
 
@@ -230,7 +270,7 @@ const BottomNavigation = () => {
   );
 };
 
-const MessageBubble = ({ message, isMine }: { message: any, isMine: any }) => {
+const MessageBubble = ({ message, isMine }: { message: any; isMine: any }) => {
   return (
     <div className={`bubble ${isMine ? "mine" : ""}`}>
       <p>{message.message}</p>

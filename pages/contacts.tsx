@@ -125,7 +125,7 @@ const ChatList = () => {
       {users.map((user: User) => (
         <Link key={user.address} href={`/chat/${user.address}`} className="flex items-center p-4 border-b w-full">
             <img
-              src={user.avatarUrl}
+              src={user?.avatarUrl}
               alt="Profile"
               className="w-10 h-10 rounded-full object-cover"
             />

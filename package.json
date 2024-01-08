@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@thirdweb-dev/auth": "^4",
-    "@thirdweb-dev/react": "^4",
-    "@thirdweb-dev/sdk": "^4",
-    "ethers": "^5",
+    "@thirdweb-dev/react": "^4.2.2",
+    "@thirdweb-dev/sdk": "^4.0.25",
+    "ethers": "^5.7.2",
     "firebase": "^9.17.1",
     "firebase-admin": "^11.5.0",
     "next": "^13",

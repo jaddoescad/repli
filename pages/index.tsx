@@ -42,9 +42,10 @@ export default function Login() {
             thirdWebUser?.address
           );
           if (twitterHandleExists) {
-            router.push("/profile");
+            console.log("twitterHandleExists", twitterHandleExists);
+            // router.push("/profile");
           } else {
-            router.push("/twitterauth");
+            // router.push("/twitterauth");
           }
         } catch (error) {
           console.error(error);

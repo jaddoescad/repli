@@ -52,7 +52,7 @@ const ChatList = () => {
     >
       <div key={user.address} className="flex items-center p-4 w-full">
         <img
-          src={user.avatarUrl}
+          src={user?.avatarUrl}
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover"
         />

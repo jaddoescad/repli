@@ -16,6 +16,8 @@ import { Auth, getAuth } from "firebase/auth";
 import { User, signInWithCustomToken } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { TwitterExtendedUser } from "../types/types";
+import { sendMoney } from "../thirdweb/ContractMutations";
+import { ethers } from "ethers";
 
 export const saveTwitterInfoInFirestore = async (
   db: Firestore,
@@ -118,43 +120,54 @@ export const getMe = async (db: Firestore, address: string) => {
     throw error;
   }
 };
-export const getMyChatRooms = async (
-  db: Firestore,
-  address: string
-) => {
+export const getMyChatRooms = async (db: Firestore, address: string) => {
   try {
     const chatRoomsRef = collection(db, "chatRooms");
-    const q = query(chatRoomsRef, where("participants", "array-contains", address));
+    const q = query(
+      chatRoomsRef,
+      where("participants", "array-contains", address)
+    );
     const querySnapshot = await getDocs(q);
 
-    const chatRoomsWithUserDetails = await Promise.all(querySnapshot.docs.map(async (chatRoomDoc) => {
-      const chatRoomData = chatRoomDoc.data();
-      const otherParticipantAddress = chatRoomData.participants.find((p: string) => p !== address);
-      const userRef = doc(db, "users", otherParticipantAddress);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
+    const chatRoomsWithUserDetails = await Promise.all(
+      querySnapshot.docs.map(async (chatRoomDoc) => {
+        const chatRoomData = chatRoomDoc.data();
+        const otherParticipantAddress = chatRoomData.participants.find(
+          (p: string) => p !== address
+        );
+        const userRef = doc(db, "users", otherParticipantAddress);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
 
-      // Format the timestamp
-      const timestamp = new Date(chatRoomData.lastMessageTimestamp.seconds * 1000);
-      const formattedTimestamp = timestamp.getFullYear() + '-' + 
-                 ('0' + (timestamp.getMonth() + 1)).slice(-2) + '-' + 
-                 ('0' + timestamp.getDate()).slice(-2) + ' ' +
-                 ('0' + timestamp.getHours()).slice(-2) + ':' +
-                 ('0' + timestamp.getMinutes()).slice(-2);
+        // Format the timestamp
+        const timestamp = new Date(
+          chatRoomData.lastMessageTimestamp.seconds * 1000
+        );
+        const formattedTimestamp =
+          timestamp.getFullYear() +
+          "-" +
+          ("0" + (timestamp.getMonth() + 1)).slice(-2) +
+          "-" +
+          ("0" + timestamp.getDate()).slice(-2) +
+          " " +
+          ("0" + timestamp.getHours()).slice(-2) +
+          ":" +
+          ("0" + timestamp.getMinutes()).slice(-2);
 
-      return {
-        id: chatRoomDoc.id,
-        lastMessage: chatRoomData.lastMessage,
-        lastMessageTimestamp: formattedTimestamp,
-        otherParticipant: {
-          address: otherParticipantAddress,
-          name: userData?.twitterName,
-          image: userData?.avatarUrl,
-          handle: userData?.twitterHandle
-        },
-        // Add any other chat room details you need
-      };
-    }));
+        return {
+          id: chatRoomDoc.id,
+          lastMessage: chatRoomData.lastMessage,
+          lastMessageTimestamp: formattedTimestamp,
+          otherParticipant: {
+            address: otherParticipantAddress,
+            name: userData?.twitterName,
+            image: userData?.avatarUrl,
+            handle: userData?.twitterHandle,
+          },
+          // Add any other chat room details you need
+        };
+      })
+    );
 
     return chatRoomsWithUserDetails;
   } catch (error) {
@@ -162,8 +175,6 @@ export const getMyChatRooms = async (
     throw error;
   }
 };
-
-
 
 export const getChatUser = async (db: Firestore, address: string) => {
   try {
@@ -175,17 +186,28 @@ export const getChatUser = async (db: Firestore, address: string) => {
   }
 };
 
-//send message in subcollection for charoom called messages
-export const sendMessage = async (db: Firestore, userId: string, recipientId: string, message: string) => {
+export const sendMessage = async (
+  db: Firestore,
+  userId: string,
+  recipientId: string,
+  message: string,
+  mutateAsync: any,
+  weiValue: any
+) => {
   const order = checkOrder(userId, recipientId);
   const chatRoomId = "chat_" + order[0] + "_" + order[1];
   const chatRoomRef = doc(db, "chatRooms", chatRoomId);
+  const messagesColRef = collection(db, "chatRooms", chatRoomId, "messages");
+  weiValue = ethers.utils.parseEther("0.00000000001");
 
-  // Start a Firestore transaction to ensure atomicity
+  // Create unique message IDs
+  const userMessageId = doc(messagesColRef).id;
+  const transactionMessageId = doc(messagesColRef).id;
+
+  // Send the user's message and the smart contract execution message to Firebase
   await runTransaction(db, async (transaction) => {
     const chatRoomDoc = await transaction.get(chatRoomRef);
 
-    // If the chat room doesn't exist, create it
     if (!chatRoomDoc.exists()) {
       transaction.set(chatRoomRef, {
         participants: order,
@@ -194,7 +216,6 @@ export const sendMessage = async (db: Firestore, userId: string, recipientId: st
         lastMessageTimestamp: serverTimestamp(),
       });
     } else {
-      // If the chat room exists, update the last message and timestamp
       transaction.update(chatRoomRef, {
         lastMessage: message,
         lastMessageTimestamp: serverTimestamp(),
@@ -202,17 +223,55 @@ export const sendMessage = async (db: Firestore, userId: string, recipientId: st
       });
     }
 
-    // Reference to the 'messages' collection
-    const colRef = collection(db, "chatRooms", chatRoomId, "messages");
-
-    // Add the new message to the 'messages' collection
-    transaction.set(doc(colRef), {
+    // User's message
+    transaction.set(doc(messagesColRef, userMessageId), {
       message: message,
       sender: userId,
       recipient: recipientId,
       createdAt: serverTimestamp(),
+      status: "pendingTransaction",
+      messageId: userMessageId,
+    });
+
+    // Smart contract execution status message
+    transaction.set(doc(messagesColRef, transactionMessageId), {
+      message: "Executing smart contract...",
+      sender: userId,
+      recipient: recipientId,
+      createdAt: serverTimestamp(),
+      status: "pendingTransaction",
+      messageId: transactionMessageId,
     });
   });
+
+  // Execute the smart contract
+  try {
+    const transactionData = await sendMoney(
+      mutateAsync,
+      weiValue,
+      chatRoomId,
+      recipientId
+    );
+
+
+    // Update the smart contract execution status message in Firebase
+    await runTransaction(db, async (transaction) => {
+      transaction.update(doc(messagesColRef, transactionMessageId), {
+        transactionHash: transactionData.receipt.transactionHash,
+        status: "hashStored",
+        message: `Transaction completed: ${transactionData.receipt.transactionHash}. Deposit amount: ${weiValue} ETH`,
+      });
+    });
+  } catch (error) {
+    console.error("Smart contract execution failed:", error);
+    // Update the smart contract execution status message to reflect the failure
+    await runTransaction(db, async (transaction) => {
+      transaction.update(doc(messagesColRef, transactionMessageId), {
+        status: "transactionFailed",
+        message: "Smart contract execution failed.",
+      });
+    });
+  }
 };
 
 const checkOrder = (userId: string, recipientId: string) => {
@@ -220,20 +279,24 @@ const checkOrder = (userId: string, recipientId: string) => {
   return order;
 };
 
-
 export const getChatRoomId = (userId: string, recipientId: string) => {
   const order = checkOrder(userId, recipientId);
   const chatRoomId = "chat_" + order[0] + "_" + order[1];
   return chatRoomId;
 };
 
-
-export const onChatMessages = (db: Firestore, chatRoomId: string, callback: (messages: any[]) => void) => {
-  console.log("id", chatRoomId)
+export const onChatMessages = (
+  db: Firestore,
+  chatRoomId: string,
+  callback: (messages: any[]) => void
+) => {
+  console.log("id", chatRoomId);
   const messagesRef = collection(db, "chatRooms", chatRoomId, "messages");
   return onSnapshot(query(messagesRef, orderBy("createdAt")), (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const messages = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     callback(messages);
   });
 };
-

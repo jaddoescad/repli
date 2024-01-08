@@ -14,7 +14,6 @@ import useFirebaseUser from "../firebase/useFirebaseUser";
 import initializeFirebaseServer from "../firebase/initFirebaseAdmin";
 import { checkTwitterHandle, verifyAuthentication } from "../utils/authUtils";
 import { GetServerSidePropsContext } from "next";
-import Loader from "../components/loader";
 import nookies from "nookies";
 
 export default function SignIn({
