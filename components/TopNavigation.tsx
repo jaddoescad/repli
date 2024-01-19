@@ -1,9 +1,8 @@
 import {
-    ConnectWallet,
-    darkTheme,
     useBalance,
     useUser,
 } from "@thirdweb-dev/react";
+import { CustomWalletButton } from "./CustomWalletButton";
 
 const TopNavigation = ({}) => {
     const { isLoading, user } = useUser();
@@ -25,26 +24,7 @@ const TopNavigation = ({}) => {
                     style={{ height: "40px" }}
                 />
             </div>
-            <ConnectWallet
-                detailsBtn={() => (
-                    <button className="border-2 border-gray-700 rounded-full p-2">
-                        {`
-            ${data?.value} ${data?.name}
-            `}
-                    </button>
-                )}
-                style={{
-                    minWidth: "50px",
-                }}
-                theme={darkTheme({
-                    colors: {
-                        primaryButtonBg: "#A873E8",
-                        primaryButtonText: "#FFFFFF",
-                    },
-                })}
-                modalSize="compact"
-                btnTitle={"Sign in"}
-            />
+            <CustomWalletButton data={data}/>
         </div>
     );
 };

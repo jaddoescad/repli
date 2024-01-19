@@ -6,7 +6,6 @@ import {
 } from "@thirdweb-dev/react";
 import "../styles/globals.css";
 import { SessionProvider } from "next-auth/react";
-import { FirAuthProvider } from "../providers/firebase-auth-provider";
 
 
 import { ACCOUNT_FACTORY_ADDRESS } from "../constants/addresses";
@@ -17,7 +16,6 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
 
   return (
     <SessionProvider session={session}>
-      <FirAuthProvider>
         <ThirdwebProvider
           activeChain="mumbai"
           clientId={process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID}
@@ -48,7 +46,6 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
             <Component {...pageProps} />
           </div>
         </ThirdwebProvider>
-      </FirAuthProvider>
     </SessionProvider>
   );
 }

@@ -1,56 +1,21 @@
 import {
   getProviders,
   signIn,
-  useSession,
   ClientSafeProvider,
 } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import { useUser } from "@thirdweb-dev/react";
-import { TwitterExtendedUser } from "../types/types";
-import { saveTwitterInfoInFirestore } from "../firebase/firebaseClientFunctions";
-import initializeFirebaseClient from "../firebase/initFirebase";
-import useFirebaseUser from "../firebase/useFirebaseUser";
-import initializeFirebaseServer from "../firebase/initFirebaseAdmin";
-import { checkTwitterHandle, verifyAuthentication } from "../utils/authUtils";
-import { GetServerSidePropsContext } from "next";
+import { getAccessTokenAndSecret, initializeThirdwebAuth, verifyTokenAndFetchUser } from "../utils/authUtils";
+
 import nookies from "nookies";
+
 
 export default function SignIn({
   providers: providers,
 }: {
   providers: Record<string, ClientSafeProvider>;
 }) {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const { isLoading, user: thirdWebUser } = useUser();
-  const { db } = initializeFirebaseClient();
-  const { user: firUser, isLoading: loadingAuth } = useFirebaseUser();
+  const { user: thirdWebUser } = useUser();
 
-  // useEffect(() => {
-  //   async function saveTwitterNameAndRedirect() {
-  //     if (session && thirdWebUser?.address) {
-  //       const user = session.user as TwitterExtendedUser;
-  //       console.log("starting");
-
-  //       if (user && user.username && user.name && user.id && firUser) {
-  //         console.log("saving");
-
-  //         try {
-  //           await saveTwitterInfoInFirestore(db, firUser, user);
-  //           // Redirect to /profile page if saving to Firestore is successful
-  //           router.push("/profile");
-  //         } catch (error) {
-  //           // Display an alert if there is an error saving to Firestore
-  //           alert("Error saving Twitter handle in Firestore");
-  //           console.error(error);
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   saveTwitterNameAndRedirect();
-  // }, [session, router, thirdWebUser]);
 
   return (
     <div className="flex flex-col items-center bg-white w-full h-full justify-between rounded-md">
@@ -95,8 +60,6 @@ export default function SignIn({
                       address: thirdWebUser?.address,
                     }
                   );
-                } else {
-                  router.push("/");
                 }
               }}
             >
@@ -109,40 +72,26 @@ export default function SignIn({
   );
 }
 
-export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+export async function getServerSideProps(ctx) {
   try {
     const providers = await getProviders();
-    const { db } = initializeFirebaseServer();
-    const user = await verifyAuthentication(ctx);
+    const { accessToken, jwt_secret } = getAccessTokenAndSecret(ctx);
+    const { getUser } = initializeThirdwebAuth();
+
+    if (!accessToken || !jwt_secret) {
+      return { redirect: { destination: "/", permanent: false } };
+    }
+
+    const user = await verifyTokenAndFetchUser(accessToken, jwt_secret, getUser, ctx);
 
     if (!user) {
-      return {
-        redirect: {
-          destination: "/",
-          permanent: false,
-        },
-      };
+      return { redirect: { destination: "/", permanent: false } };
     }
 
-    const twitterHandleExists = await checkTwitterHandle(db, user.address);
-
-    if (twitterHandleExists) {
-      return {
-        redirect: {
-          destination: "/profile",
-          permanent: false,
-        },
-      };
-    } else {
-      return { props: { providers } };
-    }
+    return user.twitter_handle
+      ? { redirect: { destination: "/profile", permanent: false } }
+      : { props: { providers } };
   } catch (err) {
-    return {
-      redirect: {
-        destination: "/",
-        permanent: false,
-      },
-    };
+    return { redirect: { destination: "/", permanent: false } };
   }
 }
-

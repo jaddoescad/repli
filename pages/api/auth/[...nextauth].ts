@@ -3,16 +3,17 @@ import TwitterProvider from "next-auth/providers/twitter";
 import { TwitterProfile } from "next-auth/providers/twitter";
 import { NextApiRequest, NextApiResponse } from "next";
 import { TwitterExtendedUser, ExtendedJWT } from "../../../types/types";
-import initializeFirebaseServer from "../../../firebase/initFirebaseAdmin";
-import { saveTwitterInfoInFirestoreServer } from "../../../firebase/firebaseServerFunctions";
-
+import { saveTwitterInfoInSupabase } from "../../../supabase/supabaseFunctions";
+import { createSupabaseServer } from "../../../supabase/createSupabaseServer";
+import fetch from "node-fetch";
 
 export default async function auth(
   request: NextApiRequest,
   response: NextApiResponse
 ) {
+  const supabaseServer = createSupabaseServer();
+
   return await NextAuth(request, response, {
-    secret: process.env.NEXTAUTH_SECRET || "",
     providers: [
       TwitterProvider({
         clientId: process.env.TWITTER_CONSUMER_KEY || "",
@@ -22,7 +23,7 @@ export default async function auth(
         userinfo: {
           url: "https://api.twitter.com/2/users/me",
           params: {
-            "user.fields": "url,entities,profile_image_url"
+            "user.fields": "url,entities,profile_image_url",
           },
         },
         profile(profile: {
@@ -37,7 +38,7 @@ export default async function auth(
             avatarUrl: profile.data.profile_image_url.replace(
               /_normal\.(jpg|png|gif)$/,
               ".$1"
-            )
+            ),
           };
         },
       }),
@@ -46,34 +47,44 @@ export default async function auth(
       async jwt({ token, user }) {
         if (user) {
           const extendedUser = user as TwitterExtendedUser;
-          const { auth, db } = initializeFirebaseServer();
-      
+
           const authParams = request.cookies.authParams;
-          let address = '';
-      
+          let address = "";
+
           // Check if authParams is defined and is a string
-          if (typeof authParams === 'string') {
+          if (typeof authParams === "string") {
             address = JSON.parse(authParams).address;
           }
-      
+
           if (!address) {
             throw new Error("No user address");
           }
 
-          saveTwitterInfoInFirestoreServer(
-            db,
-            address,
+          const public_url = await uploadProfilePictureToSupabase(
             extendedUser.id.toString(),
-            extendedUser.username,
-            extendedUser.name,
-            extendedUser.avatarUrl
+            extendedUser.avatarUrl,
+            supabaseServer
           );
+
+          try {
+            await saveTwitterInfoInSupabase(
+              supabaseServer,
+              address,
+              extendedUser.id.toString(),
+              extendedUser.username,
+              extendedUser.name,
+              public_url
+            );
+          } catch (error) {
+            console.log("error", error);
+            throw error;
+          }
 
           token.user = {
             id: extendedUser.id.toString(),
             username: extendedUser.username,
             name: extendedUser.name,
-            avatarUrl: extendedUser.avatarUrl,
+            avatarUrl: public_url,
           };
         }
         return token as ExtendedJWT;
@@ -88,7 +99,7 @@ export default async function auth(
             id: extToken.sub,
             username: extToken.user?.username,
             name: extToken.name,
-            avatarUrl: extToken.user?.avatarUrl
+            avatarUrl: extToken.user?.avatarUrl,
           },
         };
       },
@@ -99,6 +110,43 @@ export default async function auth(
   });
 }
 
+async function uploadProfilePictureToSupabase(userId, imageUrl, supabase) {
+  try {
+    // Step 1: Fetch the image from the URL
+    const response = await fetch(imageUrl);
+    if (!response.ok)
+      throw new Error(`Failed to fetch the image: ${response.statusText}`);
+    const imageBuffer = await response.arrayBuffer();
+    const fileName = `${userId}/profile.jpg`;
 
+    console.log("fileName", fileName);
+    console.log("imageBuffer", imageBuffer);
 
+    // Step 2: Upload the image to Supabase Storage
+    const { data, error: uploadError } = await supabase.storage
+      .from("profile_image")
+      .upload(fileName, imageBuffer, {
+        contentType: response.headers.get("content-type"),
+        upsert: true,
+      });
 
+    console.log("data", data);
+
+    if (uploadError) throw uploadError;
+
+    const { data:publicUrlData } = supabase.storage
+      .from("profile_image")
+      .getPublicUrl(`${data.path}`);
+
+      console.log("data.path",data.path)
+      console.log("publicUrlData",publicUrlData)
+    // Step 3: Generate a public URL (Supabase Storage might automatically make files in 'public' folder accessible)
+
+      console.log("publicUrlData.publicUrl",publicUrlData.publicUrl)
+    // Step 4: Store the public URL in your database (assuming you have a function to do this)
+    return publicUrlData.publicUrl;
+  } catch (error) {
+    console.error("Error uploading profile picture to Supabase:", error);
+    throw error;
+  }
+}

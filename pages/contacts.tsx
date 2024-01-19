@@ -1,75 +1,8 @@
-const mockChats = [
-  {
-    id: 1,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    rewards: "100",
-  },
-  {
-    id: 2,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    rewards: "200",
-  },
-  {
-    id: 3,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    rewards: "300",
-  },
-  {
-    id: 4,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    rewards: "100",
-  },
-  {
-    id: 5,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    rewards: "200",
-  },
-  {
-    id: 6,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    rewards: "300",
-  },
-  {
-    id: 7,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "John Doe",
-    rewards: "100"
-  },
-  {
-    id: 8,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Jane Smith",
-    rewards: "200"
-  },
-  {
-    id: 9,
-    profileImage:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOWHVCc66piEwKK1j9MC6PfVddig72N4Q8sHguGnHLrA&s",
-    name: "Mike Johnson",
-    rewards: "300"
-  },
-  // Add more chat objects as needed
-];
-
 interface User {
   address: string;
-  avatarUrl: string;
-  twitterName: string;
-  twitterHandle: string;
+  avatar_url: string;
+  twitter_name: string;
+  twitter_handle: string;
 }
 
 
@@ -78,11 +11,12 @@ import BottomNavigation from "../components/BottomNavigation";
 import TopNavigation from "../components/TopNavigation";
 import MainWrapper from "../wrappers/MainWrapper";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAddress } from "@thirdweb-dev/react";
-import { getUsersWithPagination } from "../firebase/firebaseClientFunctions";
-import initializeFirebaseClient from "../firebase/initFirebase";
-import { DocumentData } from "firebase-admin/firestore";
+import { getUsersWithPagination } from "../supabase/supabaseFunctions";
+import Cookies from "js-cookie";
+import { access_token_cookie, getSupabase } from "../supabase/auth";
+import { withAuth } from "../utils/authUtils";
 
 // Main component
 const Home: NextPage = () => {
@@ -97,19 +31,23 @@ const Home: NextPage = () => {
   );
 };
 
-export default Home;
 
 
 const ChatList = () => {
   const address = useAddress();
-  const { db } = initializeFirebaseClient();
   //create state for users
-  const [users, setUsers] = useState<DocumentData>([]);
+  const [users, setUsers] = useState([]);
+
+  const supabase = useMemo(() => {
+    const accessToken = Cookies.get(access_token_cookie);
+    return getSupabase(accessToken || "");
+  }, []);
+
 
   useEffect(() => {
     const getUsers = async () => {
       if (!address) return;
-      const users = await getUsersWithPagination(db, address);
+      const users = await getUsersWithPagination(supabase, address);
       setUsers(users);
     };
 
@@ -117,21 +55,24 @@ const ChatList = () => {
   }
   , [address]);
 
+
+
+  
   return (
     <div
       style={{ flexGrow: 1, overflowY: "auto" }}
       className="flex flex-col items-center w-full"
     >
       {users.map((user: User) => (
-        <Link key={user.address} href={`/chat/${user.address}`} className="flex items-center p-4 border-b w-full">
+        <Link key={user?.address} href={`/chat/${user?.address}`} className="flex items-center p-4 border-b w-full">
             <img
-              src={user?.avatarUrl}
+              src={user?.avatar_url}
               alt="Profile"
               className="w-10 h-10 rounded-full object-cover"
             />
             <div className="ml-4">
-              <div className="font-bold">{user.twitterName}</div>
-              <div className="text-gray-500">{`@${user.twitterHandle}`}</div>
+              <div className="font-bold">{user?.twitter_name}</div>
+              <div className="text-gray-500">{`@${user?.twitter_handle}`}</div>
             </div>
         </Link>
       ))}
@@ -139,3 +80,14 @@ const ChatList = () => {
   );
 };
 
+
+// This function will run at build time in production
+export const getServerSideProps = withAuth(async (ctx) => {
+  // You can use the user info here if needed, e.g., fetch data based on user
+  // Example: const data = await fetchDataBasedOnUser(user);
+
+  // Return the page props
+  return { props: {} };
+});
+
+export default Home;

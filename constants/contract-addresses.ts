@@ -1,0 +1,1 @@
+export const ChatContractAddress = "0x1E2759fCeacaf47A909c110B9187ec2787cB01cC"

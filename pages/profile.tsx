@@ -2,11 +2,14 @@ import { NextPage } from "next";
 import BottomNavigation from "../components/BottomNavigation";
 import TopNavigation from "../components/TopNavigation";
 import MainWrapper from "../wrappers/MainWrapper";
-import initializeFirebaseClient from "../firebase/initFirebase";
-import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
-import { getMe } from "../firebase/firebaseClientFunctions";
-import { useEffect, useState } from "react";
+import { useAddress } from "@thirdweb-dev/react";
+import { useEffect, useMemo, useState } from "react";
 import { RiFileCopyLine } from "react-icons/ri";
+import { withAuth } from "../utils/authUtils";
+import { getMe } from "../supabase/supabaseFunctions";
+import { access_token_cookie, getSupabase } from "../supabase/auth";
+import Cookies from "js-cookie";
+
 
 // Main component
 const Home: NextPage = () => {
@@ -21,18 +24,25 @@ const Home: NextPage = () => {
   );
 };
 
-export default Home;
 
 const ChatList = () => {
-  const { db } = initializeFirebaseClient();
   const address = useAddress();
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<any>({});
 
+  const supabase = useMemo(() => {
+    const accessToken = Cookies.get(access_token_cookie);
+    return getSupabase(accessToken || "");
+  }, []);
+
+  useEffect(() => {
+    console.log("address", address);
+  } , [address]);
+
   useEffect(() => {
     if (!address) return;
     const handleGetMe = async () => {
-      const me = await getMe(db, address);
+      const me = await getMe(address, supabase);
       console.log("me", me);
       setUser(me);
     };
@@ -50,15 +60,15 @@ const ChatList = () => {
       style={{ flexGrow: 1, overflowY: "auto" }}
       className="flex flex-col items-center w-full"
     >
-      <div key={user.address} className="flex items-center p-4 w-full">
+      <div key={user?.address} className="flex items-center p-4 w-full">
         <img
-          src={user?.avatarUrl}
+          src={user?.avatar_url}
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover"
         />
         <div className="ml-4">
-          <div className="font-bold text-xl">{user.twitterName}</div>
-          <div className="text-gray-500 text-sm">{`@${user.twitterHandle}`}</div>
+          <div className="font-bold text-xl">{user?.twitter_name}</div>
+          <div className="text-gray-500 text-sm">{`@${user?.twitter_handle}`}</div>
           <div className="flex items-center">
             <div className="flex items-center">
               {user?.address ? (
@@ -124,3 +134,15 @@ const ChatList = () => {
     </div>
   );
 };
+
+
+// This function will run at build time in production
+export const getServerSideProps = withAuth(async (ctx) => {
+  // You can use the user info here if needed, e.g., fetch data based on user
+  // Example: const data = await fetchDataBasedOnUser(user);
+
+  // Return the page props
+  return { props: {} };
+});
+
+export default Home;

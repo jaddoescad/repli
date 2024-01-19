@@ -1,12 +1,7 @@
-// import { ThirdwebAuth } from "@thirdweb-dev/auth/next";
 import { NextApiRequest, NextApiResponse } from "next";
-import { ChatContractAddress } from "../../../contract-addresses";
-import initializeFirebaseServer from "../../../firebase/initFirebaseAdmin";
+import { ChatContractAddress } from "../../../constants/contract-addresses";
 import { ThirdwebSDK } from "@thirdweb-dev/sdk";
 const sdk = new ThirdwebSDK("mumbai");
-
-// import {ThirdwebAuthHandler} from '../thirdWebAuth/[...thirdweb]'
-// import { getUser } from '../thirdWebAuth/[...thirdweb]'
 
 //this is a nextjs api route
 export default async function handler(

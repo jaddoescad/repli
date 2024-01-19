@@ -1,61 +1,24 @@
-import {
-  ConnectWallet,
-  darkTheme,
-  useAddress,
-  useAuth,
-  useUser,
-} from "@thirdweb-dev/react";
-import React, { useEffect } from "react";
-import initializeFirebaseClient from "../firebase/initFirebase";
-import useFirebaseUser from "../firebase/useFirebaseUser";
-import useFirebaseDocument from "../firebase/useFirebaseUserDocument";
+import { ConnectWallet, darkTheme } from "@thirdweb-dev/react";
+import React, { useMemo } from "react";
 import { useRouter } from "next/router";
 import {
-  checkTwitterHandleExistsClientSide,
-  signIn,
-} from "../firebase/firebaseClientFunctions";
-import initializeFirebaseServer from "../firebase/initFirebaseAdmin";
-import { GetServerSidePropsContext } from "next";
-import { checkTwitterHandle, verifyAuthentication } from "../utils/authUtils";
+  getAccessTokenAndSecret,
+  initializeThirdwebAuth,
+  onSignout,
+  verifyTokenAndFetchUser,
+} from "../utils/authUtils";
+import { access_token_cookie, getSupabase } from "../supabase/auth";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import Cookies from "js-cookie";
+import { getSupabaseUser } from "../supabase/supabaseFunctions";
 
 export default function Login() {
-  const thirdwebAuth = useAuth();
-  const address = useAddress();
-  const { auth, db } = initializeFirebaseClient();
-  const { user, isLoading: loadingAuth } = useFirebaseUser();
-  const { document, isLoading: loadingDocument } = useFirebaseDocument();
-  const { isLoading, user: thirdWebUser } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    const handleThirdWebUser = async () => {
-      if (thirdWebUser && thirdWebUser?.session) {
-        console.log("thirdWebUser", thirdWebUser);
-        try {
-          const session = thirdWebUser.session as { firtoken: string };
-
-
-          await signIn(session?.firtoken, auth, db);
-          //check if twitter handle exists
-          const twitterHandleExists = await checkTwitterHandleExistsClientSide(
-            db,
-            thirdWebUser?.address
-          );
-          if (twitterHandleExists) {
-            console.log("twitterHandleExists", twitterHandleExists);
-            // router.push("/profile");
-          } else {
-            // router.push("/twitterauth");
-          }
-        } catch (error) {
-          console.error(error);
-          // Display an alert with the error message
-        }
-      }
-    };
-
-    handleThirdWebUser();
-  }, [thirdWebUser]);
+  const supabase = useMemo(() => {
+    const accessToken = Cookies.get(access_token_cookie);
+    return getSupabase(accessToken || "");
+  }, []);
 
   return (
     <div className="flex flex-col items-center bg-white w-full h-full justify-between rounded-md">
@@ -79,6 +42,22 @@ export default function Login() {
           })}
           auth={{
             loginOptional: false,
+            onLogout: async () => {
+              onSignout(supabase, router);
+            },
+            onLogin: async (token: string) => {
+              //parse jwt token
+              const payload = jwt.decode(token) as JwtPayload;
+              const address = payload.sub;
+
+              const user = await getSupabaseUser(supabase, address);
+
+              if (user?.twitter_handle) {
+                router.push("/profile");
+              } else {
+                router.push("/twitterauth");
+              }
+            },
           }}
           modalSize="compact"
           btnTitle={"Sign in"}
@@ -92,34 +71,27 @@ export default function Login() {
 }
 
 
+export const getServerSideProps = async (ctx) => {
+  const { accessToken, jwt_secret } = getAccessTokenAndSecret(ctx);
+  const { getUser } = initializeThirdwebAuth();
+  const user = await verifyTokenAndFetchUser(
+    accessToken,
+    jwt_secret,
+    getUser,
+    ctx
+  );
 
-export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
-  try {
-    const { db } = initializeFirebaseServer();
-    const user = await verifyAuthentication(ctx);
-
-    if (!user) {
-      return { props: {} };
-    }
-
-    const twitterHandleExists = await checkTwitterHandle(db, user.address);
-
-    if (user && twitterHandleExists) {
-      return {
-        redirect: {
-          destination: "/profile",
-          permanent: false,
-        },
-      };
-    } else {
-      return {
-        redirect: {
-          destination: "/twitterauth",
-          permanent: false,
-        },
-      };
-    }
-  } catch (err) {
-    return { props: {} };
+  if (user?.twitter_handle) {
+    return {
+      props: {},
+      redirect: { destination: "/profile", permanent: false },
+    };
+  } else if (user) {
+    return {
+      props: {},
+      redirect: { destination: "/twitterauth", permanent: false },
+    };
   }
+
+  return { props: {} };
 };

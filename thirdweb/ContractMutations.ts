@@ -5,19 +5,19 @@ export const sendMoney = async (
   mutateAsync: any,
   weiValue: any,
   messageId: any,
+  sender: any,
   receiver: any
 ) => {
+  console.log("sendMoney", weiValue, messageId, receiver);
+  weiValue = ethers.utils.parseEther(weiValue.toString());
 
   const myData = await mutateAsync({
-    args: [1, "0x57f2AA8FEB4644D5684dA36c796A39A5f7C93Df4"],
+    args: [messageId, receiver],
     overrides: {
       gasLimit: 1000000,
       value: weiValue,
     },
   });
 
-  console.log("myData", myData);
   return myData;
 };
-
-
