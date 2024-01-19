@@ -28,6 +28,10 @@ const Home: NextPage = () => {
   const myAddress = useAddress();
   const [isLoading, setIsLoading] = useState(true); // Add a loading state
 
+
+  const [page, setPage] = useState(1); // Add a page state
+  const [hasMore, setHasMore] = useState(true); //
+
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
     return getSupabase(accessToken || "");
@@ -35,18 +39,34 @@ const Home: NextPage = () => {
 
   const [chat, setChat] = useState([]);
   const [chatUser, setChatUser] = useState<ChatUser | null>(null);
+  const chatRoomId = getChatRoomId(myAddress, address);
+
+  const fetchData = async (page: number, limit: number = 5) => {
+    setIsLoading(true); // Start loading
+    const moreMessages = await fetchInitialMessages(
+      supabase,
+      chatRoomId,
+      page,
+      limit
+    );
+    if (moreMessages.length < limit) {
+      setHasMore(false); // No more messages to load
+    }
+    if (page === 1) {
+      setChat(moreMessages);
+    } else {
+      setChat((prevMessages) => [...moreMessages, ...prevMessages]); // Append new messages at the beginning
+    }
+    setIsLoading(false); // End loading after messages are fetched
+  };
+
+  const loadMoreMessages = () => {
+    setPage((prevPage) => prevPage + 1);
+    fetchData(page + 1);
+  };
 
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
-
-    const chatRoomId = getChatRoomId(myAddress, address);
-
-    const fetchData = async () => {
-      setIsLoading(true); // Start loading
-      await fetchInitialMessages(supabase, chatRoomId, setChat);
-      setIsLoading(false); // End loading after messages are fetched
-    };
-    fetchData();
 
     const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
 
@@ -64,6 +84,13 @@ const Home: NextPage = () => {
     };
   }, [address, myAddress]);
 
+  useEffect(() => {
+    // Only fetch data if address and myAddress are valid
+    if (address && typeof address === "string" && myAddress) {
+      fetchData(1); // Fetch the first page
+    }
+  }, [address, myAddress]); // Depend on address and myAddress
+
   if (!myAddress || typeof myAddress !== "string") {
     // Return null or some placeholder/loading component
     return null; // or <LoadingComponent />
@@ -74,7 +101,13 @@ const Home: NextPage = () => {
       {chatUser && <TopNavigation chatUser={chatUser} />}
 
       {/* Pass isLoading as a prop */}
-      <ChatList chat={chat} myAddress={myAddress} isLoading={isLoading} />
+      <ChatList
+        chat={chat}
+        myAddress={myAddress}
+        isLoading={isLoading}
+        loadMoreMessages={loadMoreMessages}
+        hasMore={hasMore}
+      />
 
       <BottomNavigation />
     </MainWrapper>
@@ -85,10 +118,14 @@ const ChatList = ({
   chat,
   myAddress,
   isLoading,
+  loadMoreMessages, // Function to load more messages
+  hasMore, // Indicates if more messages are available
 }: {
   chat: any[];
   myAddress: string;
   isLoading: boolean;
+  loadMoreMessages: () => void;
+  hasMore: boolean;
 }) => {
   const bottomListRef = useRef(null);
   const chatContainerRef = useRef(null); // Ref for the chat container
@@ -104,14 +141,30 @@ const ChatList = ({
     }, {});
   };
 
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    if (
+      scrollTop + clientHeight >= scrollHeight - 100 &&
+      hasMore &&
+      !isLoading
+    ) {
+      // 100 is the threshold
+      loadMoreMessages();
+    }
+  };
+
   const groupedMessages = groupMessagesByDate(chat);
 
   useEffect(() => {
-    if (!isLoading && chatContainerRef.current) {
-      // Set scroll position to the bottom of the chat container
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [isLoading])
+    // Add scroll event listener
+    const container = chatContainerRef.current;
+    container?.addEventListener("scroll", handleScroll);
+    return () => {
+      // Remove scroll event listener
+      container?.removeEventListener("scroll", handleScroll);
+    };
+  }, [isLoading, hasMore]); // Add dependencies
 
   if (isLoading) {
     return <div>Loading...</div>; // Show loader when loading

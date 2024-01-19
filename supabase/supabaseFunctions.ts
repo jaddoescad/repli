@@ -280,8 +280,7 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
   }
 };
 
-
-export const fetchInitialMessages = async (supabase, chatRoomId, setChat) => {
+export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) => {
   const { data, error } = await supabase
     .from('messages')
     .select(`
@@ -293,18 +292,17 @@ export const fetchInitialMessages = async (supabase, chatRoomId, setChat) => {
     `)
     .eq('chat_room_id', chatRoomId)
     .order('created_at', { ascending: false })
-    .limit(10); // You can adjust the limit as needed
-    
+    .range((page - 1) * limit, page * limit - 1);
 
   if (error) {
     console.error("Error fetching initial messages: ", error);
+    return [];
   } else {
     const formattedData = data.map((message) => {
-      // Assuming each message has at most one associated transaction
       const transaction = message.transactions[0] || {};
       return { ...message, ...transaction };
     });
-    setChat(formattedData);
+    return formattedData;
   }
 };
 
