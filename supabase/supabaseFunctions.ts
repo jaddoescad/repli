@@ -293,13 +293,19 @@ export const fetchInitialMessages = async (supabase, chatRoomId, setChat) => {
     `)
     .eq('chat_room_id', chatRoomId)
     .order('created_at', { ascending: false })
-    .limit(50); // You can adjust the limit as needed
+    .limit(10); // You can adjust the limit as needed
 
   if (error) {
     console.error("Error fetching initial messages: ", error);
   } else {
-    setChat(data);
+    const formattedData = data.map((message) => {
+      // Assuming each message has at most one associated transaction
+      const transaction = message.transactions[0] || {};
+      return { ...message, ...transaction };
+    });
+    setChat(formattedData);
   }
 };
+
 
 

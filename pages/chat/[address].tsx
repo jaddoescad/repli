@@ -19,6 +19,9 @@ import { CustomWalletButton } from "../../components/CustomWalletButton";
 import { getChatRoomId } from "../../utils/utils";
 import { ChatUser } from "../../types/types";
 import { fetchInitialMessages } from "../../supabase/supabaseFunctions";
+import { TransactionMessage } from "../../components/TransactionMessage";
+import { MessageBubble } from "../../components/RegularMessage";
+import TopNavigation from "../../components/TopNavigation";
 
 
 // Main component
@@ -42,6 +45,7 @@ const Home: NextPage = () => {
 
     const chatRoomId = getChatRoomId(myAddress, address);
     fetchInitialMessages(supabase, chatRoomId, setChat);
+
     const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
 
     const handleGetMyChatRooms = async () => {
@@ -130,68 +134,6 @@ const ChatList = ({ chat, myAddress }: { chat: any[]; myAddress: string }) => {
   );
 };
 
-const TopNavigation = ({
-  chatUser,
-}: {
-  chatUser: { twitter_name: string; twitter_handle: string; avatar_url: string };
-}) => {
-  const router = useRouter();
-  const { data } = useBalance();
-
-  const handleBackButtonClick = () => {
-    router.back(); // Go back to the previous page
-  };
-
-  const handleTouchMove = (e: any) => {
-    e.stopPropagation();
-  };
-
-  return (
-    <div
-      onTouchMove={handleTouchMove}
-      style={{
-        borderBottom: "1px solid #000000",
-        height: "80px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0 16px",
-      }}
-      className="w-full bg-white py-4 px-6 text-black"
-    >
-      <IoChevronBackSharp
-        style={{
-          marginRight: "10px",
-          fontSize: "20px",
-        }}
-        onClick={() => {
-          // Handle back button click event
-          handleBackButtonClick();
-        }}
-      />
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <img
-          src={chatUser?.avatar_url}
-          alt="Avatar"
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            marginRight: "10px",
-          }}
-        />
-        <div>
-          <div style={{ fontWeight: "bold" }}>{chatUser?.twitter_name}</div>
-          <div style={{ fontSize: "12px" }}>{`@${chatUser?.twitter_handle}`}</div>
-        </div>
-      </div>
-      <div>
-      <CustomWalletButton data={data}/>
-
-      </div>
-    </div>
-  );
-};
 
 const BottomNavigation = () => {
   const { refetch } = useBalance();
@@ -282,87 +224,6 @@ const BottomNavigation = () => {
   );
 };
 
-const MessageBubble = ({
-  message,
-  isMine,
-  created_at,
-}: {
-  message: any;
-  isMine: any;
-  created_at: any;
-}) => {
-  return (
-    <div className={`bubble ${isMine ? "mine" : ""}`}>
-      <div>{created_at}</div>
-
-      <p>{message}</p>
-      <span style={{ fontSize: "10px", opacity: "0.7" }}>
-        {new Date(created_at).toLocaleTimeString([], {
-          hour: "numeric",
-          minute: "numeric",
-          hour12: true,
-        })}
-      </span>
-      <style jsx>{`
-        .bubble {
-          background-color: #f0f0f0;
-          margin: 10px;
-          padding: 10px;
-          border-radius: 10px;
-          justify-content: space-between;
-          display: block;
-          width: fit-content;
-        }
-        .mine {
-          background-color: #a0c4ff;
-          margin-left: auto;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-const TransactionMessage = ({
-  hash,
-  weiValue,
-  isMine,
-  created_at,
-}: {
-  hash: any;
-  weiValue: any;
-  isMine: any;
-  created_at: any;
-}) => {
-  return (
-    <div className={`bubble ${isMine ? "mine" : ""}`}>
-      <p>
-        {hash ? `hash: ${hash}, value: ${weiValue}` : "Pending Transaction..."}
-      </p>
-      <span style={{ fontSize: "10px", opacity: "0.7" }}>
-        {new Date(created_at.seconds * 1000).toLocaleTimeString([], {
-          hour: "numeric",
-          minute: "numeric",
-          hour12: true,
-        })}
-      </span>
-      <style jsx>{`
-        .bubble {
-          background-color: #f0f0f0;
-          margin: 10px;
-          padding: 10px;
-          border-radius: 10px;
-          justify-content: space-between;
-          display: block;
-          width: fit-content;
-        }
-        .mine {
-          background-color: #a0c4ff;
-          margin-left: auto;
-        }
-      `}</style>
-    </div>
-  );
-};
 
 // This function will run at build time in production
 export const getServerSideProps = withAuth(async (ctx) => {
