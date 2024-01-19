@@ -60,7 +60,7 @@ const Home: NextPage = () => {
     }
     setIsLoading(false); // End loading after messages are fetched
   };
-  
+
   const loadMoreMessages = async (prevScrollHeight) => {
     if (!chatContainerRef.current) return;
   
@@ -148,6 +148,8 @@ const ChatList = ({
   chatContainerRef: any;
 }) => {
   const bottomListRef = useRef(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // New state variable for initial load
+  const observer = useRef(null); // Ref for the observer
 
   const groupMessagesByDate = (messages: any[]) => {
     return messages.reduce((groups: { [key: string]: any[] }, message: any) => {
@@ -181,6 +183,41 @@ const ChatList = ({
       container?.removeEventListener('scroll', handleScroll);
     };
   }, [isLoading, hasMore, chat.length]); // Add dependencies
+
+
+  useEffect(() => {
+    if (chatContainerRef.current && isInitialLoad && chat.length > 0) {
+      const { current: container } = chatContainerRef;
+
+      // Function to handle container mutations
+      const handleMutate = (mutations) => {
+        for (let mutation of mutations) {
+          if (mutation.type === 'childList' || mutation.type === 'attributes') {
+            container.scrollTop = container.scrollHeight;
+          }
+        }
+      };
+
+      // Create an observer instance linked to the handleMutate callback
+      observer.current = new MutationObserver(handleMutate);
+
+      // Start observing the chat container for configured mutations
+      observer.current.observe(container, {
+        childList: true, // Observe direct children
+        subtree: true, // and lower descendants too
+        attributes: true, // Observe attributes changes
+      });
+
+      // Initial scroll to the bottom
+      container.scrollTop = container.scrollHeight;
+      setIsInitialLoad(false);
+
+      // Disconnect the observer on component unmount
+      return () => {
+        observer.current.disconnect();
+      };
+    }
+  }, [chat, isInitialLoad]);
 
   if (isLoading) {
     return <div>Loading...</div>; // Show loader when loading
