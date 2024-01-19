@@ -27,6 +27,7 @@ const Home: NextPage = () => {
   const { address } = router.query;
   const myAddress = useAddress();
   const [isLoading, setIsLoading] = useState(true); // Add a loading state
+  const chatContainerRef = useRef(null); // Ref for the chat container
 
 
   const [page, setPage] = useState(1); // Add a page state
@@ -60,10 +61,18 @@ const Home: NextPage = () => {
     setIsLoading(false); // End loading after messages are fetched
   };
 
-  const loadMoreMessages = () => {
+  const loadMoreMessages = async (prevScrollHeight) => {
     setPage((prevPage) => prevPage + 1);
-    fetchData(page + 1);
+    await fetchData(page + 1);
+  
+    if (chatContainerRef.current) {
+      const newScrollHeight = chatContainerRef.current.scrollHeight;
+      const scrollOffset = newScrollHeight - prevScrollHeight;
+      chatContainerRef.current.scrollTop = scrollOffset;
+    }
   };
+  
+  
 
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
@@ -105,6 +114,7 @@ const Home: NextPage = () => {
         chat={chat}
         myAddress={myAddress}
         isLoading={isLoading}
+        chatContainerRef={chatContainerRef}
         loadMoreMessages={loadMoreMessages}
         hasMore={hasMore}
       />
@@ -118,17 +128,20 @@ const ChatList = ({
   chat,
   myAddress,
   isLoading,
-  loadMoreMessages, // Function to load more messages
-  hasMore, // Indicates if more messages are available
+  loadMoreMessages,
+  hasMore,
+  chatContainerRef,
 }: {
   chat: any[];
   myAddress: string;
   isLoading: boolean;
-  loadMoreMessages: () => void;
+  loadMoreMessages: (prevScrollHeight: number) => void;
   hasMore: boolean;
+  chatContainerRef: any;
 }) => {
   const bottomListRef = useRef(null);
-  const chatContainerRef = useRef(null); // Ref for the chat container
+  const isFirstLoad = useRef(true); // Ref to track the initial load
+
 
   const groupMessagesByDate = (messages: any[]) => {
     return messages.reduce((groups: { [key: string]: any[] }, message: any) => {
@@ -143,28 +156,29 @@ const ChatList = ({
 
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-    if (
-      scrollTop + clientHeight >= scrollHeight - 100 &&
-      hasMore &&
-      !isLoading
-    ) {
-      // 100 is the threshold
-      loadMoreMessages();
+    const { scrollTop } = chatContainerRef.current;
+    if (scrollTop === 0 && hasMore && !isLoading) {
+      const currentHeight = chatContainerRef.current.scrollHeight;
+      loadMoreMessages(currentHeight);
     }
   };
 
   const groupedMessages = groupMessagesByDate(chat);
-
   useEffect(() => {
-    // Add scroll event listener
+    // Scroll to bottom on initial load
+    if (isFirstLoad.current && chatContainerRef.current && chat.length > 0) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      isFirstLoad.current = false; // Set it to false after initial load
+    }
+
+    // Add scroll event listener for infinite scroll
     const container = chatContainerRef.current;
     container?.addEventListener("scroll", handleScroll);
     return () => {
       // Remove scroll event listener
       container?.removeEventListener("scroll", handleScroll);
     };
-  }, [isLoading, hasMore]); // Add dependencies
+  }, [chat, isLoading, hasMore]); 
 
   if (isLoading) {
     return <div>Loading...</div>; // Show loader when loading
