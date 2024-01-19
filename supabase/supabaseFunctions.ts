@@ -294,6 +294,7 @@ export const fetchInitialMessages = async (supabase, chatRoomId, setChat) => {
     .eq('chat_room_id', chatRoomId)
     .order('created_at', { ascending: false })
     .limit(10); // You can adjust the limit as needed
+    
 
   if (error) {
     console.error("Error fetching initial messages: ", error);

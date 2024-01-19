@@ -9,13 +9,10 @@ import {
   sendMessage,
 } from "../../supabase/supabaseFunctions";
 
-import { IoChevronBackSharp } from "react-icons/io5";
-import { PiDotsThreeOutlineFill } from "react-icons/pi";
 import { ChatContractAddress } from "../../constants/contract-addresses";
 import Cookies from "js-cookie";
 import { access_token_cookie, getSupabase } from "../../supabase/auth";
 import { withAuth } from "../../utils/authUtils";
-import { CustomWalletButton } from "../../components/CustomWalletButton";
 import { getChatRoomId } from "../../utils/utils";
 import { ChatUser } from "../../types/types";
 import { fetchInitialMessages } from "../../supabase/supabaseFunctions";
@@ -23,13 +20,13 @@ import { TransactionMessage } from "../../components/TransactionMessage";
 import { MessageBubble } from "../../components/RegularMessage";
 import TopNavigation from "../../components/TopNavigation";
 
-
 // Main component
 const Home: NextPage = () => {
   //get  param from router
   const router = useRouter();
   const { address } = router.query;
   const myAddress = useAddress();
+  const [isLoading, setIsLoading] = useState(true); // Add a loading state
 
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
@@ -39,12 +36,17 @@ const Home: NextPage = () => {
   const [chat, setChat] = useState([]);
   const [chatUser, setChatUser] = useState<ChatUser | null>(null);
 
-
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
 
     const chatRoomId = getChatRoomId(myAddress, address);
-    fetchInitialMessages(supabase, chatRoomId, setChat);
+
+    const fetchData = async () => {
+      setIsLoading(true); // Start loading
+      await fetchInitialMessages(supabase, chatRoomId, setChat);
+      setIsLoading(false); // End loading after messages are fetched
+    };
+    fetchData();
 
     const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
 
@@ -62,10 +64,6 @@ const Home: NextPage = () => {
     };
   }, [address, myAddress]);
 
-
-
-
-
   if (!myAddress || typeof myAddress !== "string") {
     // Return null or some placeholder/loading component
     return null; // or <LoadingComponent />
@@ -75,16 +73,26 @@ const Home: NextPage = () => {
     <MainWrapper>
       {chatUser && <TopNavigation chatUser={chatUser} />}
 
-      <ChatList chat={chat} myAddress={myAddress} />
+      {/* Pass isLoading as a prop */}
+      <ChatList chat={chat} myAddress={myAddress} isLoading={isLoading} />
 
       <BottomNavigation />
     </MainWrapper>
   );
 };
 
+const ChatList = ({
+  chat,
+  myAddress,
+  isLoading,
+}: {
+  chat: any[];
+  myAddress: string;
+  isLoading: boolean;
+}) => {
+  const bottomListRef = useRef(null);
+  const chatContainerRef = useRef(null); // Ref for the chat container
 
-
-const ChatList = ({ chat, myAddress }: { chat: any[]; myAddress: string }) => {
   const groupMessagesByDate = (messages: any[]) => {
     return messages.reduce((groups: { [key: string]: any[] }, message: any) => {
       const date = new Date(message.created_at).toDateString();
@@ -98,8 +106,19 @@ const ChatList = ({ chat, myAddress }: { chat: any[]; myAddress: string }) => {
 
   const groupedMessages = groupMessagesByDate(chat);
 
+  useEffect(() => {
+    if (!isLoading && chatContainerRef.current) {
+      // Set scroll position to the bottom of the chat container
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [isLoading])
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Show loader when loading
+  }
+
   return (
-    <div className="w-full h-full overflow-y-auto">
+    <div ref={chatContainerRef} className="w-full h-full overflow-y-auto">
       {Object.keys(groupedMessages).map((date) => (
         <div key={date}>
           <div className="date-header">{date}</div>
@@ -130,10 +149,10 @@ const ChatList = ({ chat, myAddress }: { chat: any[]; myAddress: string }) => {
           color: #666;
         }
       `}</style>
+      <div ref={bottomListRef} />
     </div>
   );
 };
-
 
 const BottomNavigation = () => {
   const { refetch } = useBalance();
@@ -161,8 +180,6 @@ const BottomNavigation = () => {
       textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
     }
   }, [text]);
-
-  
 
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
@@ -217,7 +234,6 @@ const BottomNavigation = () => {
         className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded-md mt-2 self-start"
         style={{ fontSize: "15px" }}
       >
-        {" "}
         1 USD
       </button>
     </div>
