@@ -128,8 +128,8 @@ const ChatList = ({
   chat,
   myAddress,
   isLoading,
-  loadMoreMessages,
-  hasMore,
+  loadMoreMessages, // Function to load more messages
+  hasMore, // Indicates if more messages are available
   chatContainerRef,
 }: {
   chat: any[];
@@ -140,8 +140,6 @@ const ChatList = ({
   chatContainerRef: any;
 }) => {
   const bottomListRef = useRef(null);
-  const isFirstLoad = useRef(true); // Ref to track the initial load
-
 
   const groupMessagesByDate = (messages: any[]) => {
     return messages.reduce((groups: { [key: string]: any[] }, message: any) => {
@@ -164,21 +162,16 @@ const ChatList = ({
   };
 
   const groupedMessages = groupMessagesByDate(chat);
-  useEffect(() => {
-    // Scroll to bottom on initial load
-    if (isFirstLoad.current && chatContainerRef.current && chat.length > 0) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      isFirstLoad.current = false; // Set it to false after initial load
-    }
 
-    // Add scroll event listener for infinite scroll
+  useEffect(() => {
+    // Add scroll event listener
     const container = chatContainerRef.current;
     container?.addEventListener("scroll", handleScroll);
     return () => {
       // Remove scroll event listener
       container?.removeEventListener("scroll", handleScroll);
     };
-  }, [chat, isLoading, hasMore]); 
+  }, [isLoading, hasMore]); // Add dependencies
 
   if (isLoading) {
     return <div>Loading...</div>; // Show loader when loading
