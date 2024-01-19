@@ -60,17 +60,25 @@ const Home: NextPage = () => {
     }
     setIsLoading(false); // End loading after messages are fetched
   };
-
+  
   const loadMoreMessages = async (prevScrollHeight) => {
+    if (!chatContainerRef.current) return;
+  
     setPage((prevPage) => prevPage + 1);
     await fetchData(page + 1);
   
-    if (chatContainerRef.current) {
-      const newScrollHeight = chatContainerRef.current.scrollHeight;
-      const scrollOffset = newScrollHeight - prevScrollHeight;
-      chatContainerRef.current.scrollTop = scrollOffset;
-    }
+    // Use a timeout to ensure that the DOM has updated
+    setTimeout(() => {
+      if (!chatContainerRef.current) return;
+  
+      const currentScrollHeight = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = currentScrollHeight - prevScrollHeight;
+    }, 0); // Timeout with 0 delay allows the DOM to update
   };
+  
+  
+  
+  
   
   
 
@@ -153,25 +161,26 @@ const ChatList = ({
   };
 
   const handleScroll = () => {
-    if (!chatContainerRef.current) return;
-    const { scrollTop } = chatContainerRef.current;
-    if (scrollTop === 0 && hasMore && !isLoading) {
-      const currentHeight = chatContainerRef.current.scrollHeight;
-      loadMoreMessages(currentHeight);
+    if (!chatContainerRef.current || isLoading) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    if (scrollTop === 0 && hasMore) {
+      const prevScrollHeight = scrollHeight;
+      loadMoreMessages(prevScrollHeight);
     }
   };
+
 
   const groupedMessages = groupMessagesByDate(chat);
 
   useEffect(() => {
-    // Add scroll event listener
     const container = chatContainerRef.current;
-    container?.addEventListener("scroll", handleScroll);
+    container?.addEventListener('scroll', handleScroll);
+
     return () => {
-      // Remove scroll event listener
-      container?.removeEventListener("scroll", handleScroll);
+      container?.removeEventListener('scroll', handleScroll);
     };
-  }, [isLoading, hasMore]); // Add dependencies
+  }, [isLoading, hasMore, chat.length]); // Add dependencies
 
   if (isLoading) {
     return <div>Loading...</div>; // Show loader when loading
