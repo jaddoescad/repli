@@ -4,14 +4,17 @@ import { useRouter } from "next/router";
 import { useMemo } from "react";
 import { access_token_cookie, getSupabase } from "../supabase/auth";
 import { onSignout } from "../utils/authUtils";
+import { WalletData } from "../types/types";
+import { BigNumber } from "ethers";
 
 export const CustomWalletButton = ({
-  data,
+  data
 }: {
-  data: { value: string; name: string };
+  data?: WalletData;
 }) => {
-  const formattedValue = (parseInt(data?.value) / 1e18).toFixed(3);
-  const router = useRouter();
+    const stringValue = data?.value instanceof BigNumber ? data?.value.toString() : data?.value;
+
+    const formattedValue = stringValue && (parseInt(stringValue) / 1e18).toFixed(3);  const router = useRouter();
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
     return getSupabase(accessToken || "");
@@ -19,12 +22,12 @@ export const CustomWalletButton = ({
   return (
     <ConnectWallet
       detailsBtn={() => (
-        <button className="border-2 border-gray-700 rounded-full p-2">
+        formattedValue ? <button className="border-2 border-gray-700 rounded-full p-2">
           {`
             $${formattedValue} 
       
             `}
-        </button>
+        </button> : <></>
         //   ${data?.name}
       )}
       style={{

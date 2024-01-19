@@ -17,12 +17,9 @@ import { access_token_cookie, getSupabase } from "../../supabase/auth";
 import { withAuth } from "../../utils/authUtils";
 import { CustomWalletButton } from "../../components/CustomWalletButton";
 import { getChatRoomId } from "../../utils/utils";
+import { ChatUser } from "../../types/types";
+import { fetchInitialMessages } from "../../supabase/supabaseFunctions";
 
-interface ChatUser {
-  twitter_name: string;
-  twitter_handle: string;
-  avatar_url: string;
-}
 
 // Main component
 const Home: NextPage = () => {
@@ -36,7 +33,7 @@ const Home: NextPage = () => {
     return getSupabase(accessToken || "");
   }, []);
 
-  const [chat, setChat] = useState<any[]>([]);
+  const [chat, setChat] = useState([]);
   const [chatUser, setChatUser] = useState<ChatUser | null>(null);
 
 
@@ -44,6 +41,7 @@ const Home: NextPage = () => {
     if (!address || typeof address !== "string" || !myAddress) return;
 
     const chatRoomId = getChatRoomId(myAddress, address);
+    fetchInitialMessages(supabase, chatRoomId, setChat);
     const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
 
     const handleGetMyChatRooms = async () => {
@@ -59,6 +57,10 @@ const Home: NextPage = () => {
       supabase.removeChannel(unsubscribe);
     };
   }, [address, myAddress]);
+
+
+
+
 
   if (!myAddress || typeof myAddress !== "string") {
     // Return null or some placeholder/loading component
@@ -140,18 +142,9 @@ const TopNavigation = ({
     router.back(); // Go back to the previous page
   };
 
-  useEffect(() => {
-    console.log("chatUser", chatUser);
-  }, [chatUser]);
-
   const handleTouchMove = (e: any) => {
     e.stopPropagation();
   };
-
-  useEffect(() => {
-    console.log("data", data);
-  }
-  , [data]);
 
   return (
     <div
@@ -233,34 +226,6 @@ const BottomNavigation = () => {
     const accessToken = Cookies.get(access_token_cookie);
     return getSupabase(accessToken || "");
   }, []);
-
-  useEffect(() => {
-    console.log("data", data);
-  }, [data]);
-
-  useEffect(() => {
-    console.log("status", status);
-  }, [status]);
-
-  useEffect(() => {
-    console.log("error", error);
-  }, [error]);
-
-  useEffect(() => {
-    console.log("failureReason", failureReason);
-  }, [failureReason]);
-
-  useEffect(() => {
-    console.log("variables", variables);
-  }, [variables]);
-
-  useEffect(() => {
-    console.log("isSuccess", isSuccess);
-  }, [isSuccess]);
-
-  useEffect(() => {
-    console.log("isLoading", isLoading);
-  }, [isLoading]);
 
   // Function to handle send button click
   const handleSend = async () => {

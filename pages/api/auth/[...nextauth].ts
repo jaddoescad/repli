@@ -6,6 +6,7 @@ import { TwitterExtendedUser, ExtendedJWT } from "../../../types/types";
 import { saveTwitterInfoInSupabase } from "../../../supabase/supabaseFunctions";
 import { createSupabaseServer } from "../../../supabase/createSupabaseServer";
 import fetch from "node-fetch";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export default async function auth(
   request: NextApiRequest,
@@ -110,7 +111,7 @@ export default async function auth(
   });
 }
 
-async function uploadProfilePictureToSupabase(userId, imageUrl, supabase) {
+async function uploadProfilePictureToSupabase(userId: string, imageUrl: string, supabase: SupabaseClient<any, "public", any>) {
   try {
     // Step 1: Fetch the image from the URL
     const response = await fetch(imageUrl);
@@ -119,18 +120,14 @@ async function uploadProfilePictureToSupabase(userId, imageUrl, supabase) {
     const imageBuffer = await response.arrayBuffer();
     const fileName = `${userId}/profile.jpg`;
 
-    console.log("fileName", fileName);
-    console.log("imageBuffer", imageBuffer);
-
     // Step 2: Upload the image to Supabase Storage
     const { data, error: uploadError } = await supabase.storage
       .from("profile_image")
       .upload(fileName, imageBuffer, {
-        contentType: response.headers.get("content-type"),
+        contentType: response.headers.get("content-type") as string,
         upsert: true,
       });
 
-    console.log("data", data);
 
     if (uploadError) throw uploadError;
 
@@ -138,12 +135,6 @@ async function uploadProfilePictureToSupabase(userId, imageUrl, supabase) {
       .from("profile_image")
       .getPublicUrl(`${data.path}`);
 
-      console.log("data.path",data.path)
-      console.log("publicUrlData",publicUrlData)
-    // Step 3: Generate a public URL (Supabase Storage might automatically make files in 'public' folder accessible)
-
-      console.log("publicUrlData.publicUrl",publicUrlData.publicUrl)
-    // Step 4: Store the public URL in your database (assuming you have a function to do this)
     return publicUrlData.publicUrl;
   } catch (error) {
     console.error("Error uploading profile picture to Supabase:", error);

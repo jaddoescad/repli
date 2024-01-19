@@ -3,6 +3,7 @@ import { PrivateKeyWallet } from "@thirdweb-dev/auth/evm";
 import { getSupabaseUser } from "../supabase/supabaseFunctions";
 import { access_token_cookie, getSupabase } from "../supabase/auth";
 import jwt, { type JwtPayload } from "jsonwebtoken";
+import Cookies from "js-cookie";
 
 export const getAccessTokenAndSecret = (ctx) => {
   const accessToken = ctx.req.cookies[access_token_cookie];
@@ -70,6 +71,7 @@ export const withAuth = (getServerSidePropsFunc: any) => async (ctx: any) => {
 
 export const onSignout = async (supabase, router) => {
   const { error } = await supabase.auth.signOut();
+  Cookies.remove(access_token_cookie);
   if (error) return alert(error.message);
   router.push("/");
 };

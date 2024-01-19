@@ -128,7 +128,7 @@ export const sendMessage = async (
 export const onChatMessagesSupabase = (
   supabase: SupabaseClient,
   chatRoomId: string,
-  callback: (messages: any[]) => void
+  callback: (messages: []) => void
 ) => {
   const channel = `chatRooms:${chatRoomId}`;
 
@@ -169,22 +169,6 @@ export const onChatMessagesSupabase = (
     )
     .subscribe();
 
-  // const channel = `chatRooms:${chatRoomId}`;
-  // const unsubscribe = supabase
-  //   .channel(channel)
-  //   .on(
-  //     "postgres_changes",
-  //     { event: "INSERT", schema: "public", table: "messages" , filter: `chat_room_id=eq.${chatRoomId}`},
-  //     (payload) => {
-  //       console.log("Change received!", payload);
-  //       // Check if the new message belongs to the current chat room
-  //       if (payload.new.chat_room_id === chatRoomId) {
-  //         // Update the chat with the new message added to the existing messages
-  //         callback(prevMessages => [...prevMessages, payload.new]);
-  //       }
-  //     }
-  //   )
-  //   .subscribe();
 
   return unsubscribe;
 };
@@ -295,3 +279,27 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
     throw error;
   }
 };
+
+
+export const fetchInitialMessages = async (supabase, chatRoomId, setChat) => {
+  const { data, error } = await supabase
+    .from('messages')
+    .select(`
+      *,
+      transactions (
+        transaction_hash,
+        wei_value
+      )
+    `)
+    .eq('chat_room_id', chatRoomId)
+    .order('created_at', { ascending: false })
+    .limit(50); // You can adjust the limit as needed
+
+  if (error) {
+    console.error("Error fetching initial messages: ", error);
+  } else {
+    setChat(data);
+  }
+};
+
+

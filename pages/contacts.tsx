@@ -1,9 +1,3 @@
-interface User {
-  address: string;
-  avatar_url: string;
-  twitter_name: string;
-  twitter_handle: string;
-}
 
 
 import { NextPage } from "next";

@@ -1,11 +1,9 @@
 import {
-    useBalance,
-    useUser,
+    useBalance
 } from "@thirdweb-dev/react";
 import { CustomWalletButton } from "./CustomWalletButton";
 
 const TopNavigation = ({}) => {
-    const { isLoading, user } = useUser();
     const { data } = useBalance();
 
     return (
@@ -24,7 +22,7 @@ const TopNavigation = ({}) => {
                     style={{ height: "40px" }}
                 />
             </div>
-            <CustomWalletButton data={data}/>
+           <CustomWalletButton data={data}/>
         </div>
     );
 };

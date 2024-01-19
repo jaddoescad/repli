@@ -5,10 +5,12 @@ import MainWrapper from "../wrappers/MainWrapper";
 import { useAddress } from "@thirdweb-dev/react";
 import { useEffect, useMemo, useState } from "react";
 import { RiFileCopyLine } from "react-icons/ri";
-import { withAuth } from "../utils/authUtils";
+import { onSignout, withAuth } from "../utils/authUtils";
 import { getMe } from "../supabase/supabaseFunctions";
 import { access_token_cookie, getSupabase } from "../supabase/auth";
 import Cookies from "js-cookie";
+import { useRouter } from "next/router";
+import { useLogout } from "@thirdweb-dev/react";
 
 
 // Main component
@@ -29,6 +31,11 @@ const ChatList = () => {
   const address = useAddress();
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<any>({});
+  const router = useRouter();
+  const {
+    logout,
+    isLoading
+  } = useLogout();
 
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
@@ -100,7 +107,7 @@ const ChatList = () => {
             }}
           >
             <div className="flex items-center">
-              <div className="text-gray-500 text-sm">Total Rewards</div>
+              <div className="text-gray-500 text-sm">Total Rewards Received</div>
               <div className="text-lg font-bold ml-6">1000 USDC</div>
             </div>
           </div>
@@ -112,8 +119,8 @@ const ChatList = () => {
             }}
           >
             <div className="flex items-center">
-              <div className="text-gray-500 text-sm">Balance</div>
-              <div className="text-lg font-bold ml-16 balance">
+              <div className="text-gray-500 text-sm">Total Rewards Sent</div>
+              <div className="text-lg font-bold ml-14 balance">
                 1000 USDC
               </div>
             </div>
@@ -128,6 +135,11 @@ const ChatList = () => {
           color: "#fff",
           marginTop: "20px",
         }}
+        onClick={async () => {
+          await logout();
+          onSignout(supabase, router);
+        }
+        }
       >
         Sign Out
       </button>   
