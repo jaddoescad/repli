@@ -1,7 +1,9 @@
 import { useBalance } from "@thirdweb-dev/react";
 import { useRouter } from "next/router";
+import { CustomWalletButton } from "./CustomWalletButton";
+import { IoChevronBackSharp } from "react-icons/io5";
 
-const TopNavigation = ({
+export const TopChatNavigation = ({
     chatUser,
   }: {
     chatUser: { twitter_name: string; twitter_handle: string; avatar_url: string };

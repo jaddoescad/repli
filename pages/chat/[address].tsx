@@ -19,6 +19,8 @@ import { fetchInitialMessages } from "../../supabase/supabaseFunctions";
 import { TransactionMessage } from "../../components/TransactionMessage";
 import { MessageBubble } from "../../components/RegularMessage";
 import TopNavigation from "../../components/TopNavigation";
+import Loader from "../../components/Loader";
+import { TopChatNavigation } from "../../components/TopChatNavigation";
 
 // Main component
 const Home: NextPage = () => {
@@ -115,7 +117,8 @@ const Home: NextPage = () => {
 
   return (
     <MainWrapper>
-      {chatUser && <TopNavigation chatUser={chatUser} />}
+
+      {chatUser && <TopChatNavigation chatUser={chatUser} />}
 
       {/* Pass isLoading as a prop */}
       <ChatList
@@ -219,12 +222,21 @@ const ChatList = ({
     }
   }, [chat, isInitialLoad]);
 
-  if (isLoading) {
-    return <div>Loading...</div>; // Show loader when loading
-  }
 
   return (
     <div ref={chatContainerRef} className="w-full h-full overflow-y-auto">
+        {isLoading && ( // Show loader when loading
+        <div className="
+          flex
+          justify-center
+          items-center
+          w-full
+          my-4
+          
+        ">
+          <Loader />
+        </div>
+      )}
       {Object.keys(groupedMessages).map((date) => (
         <div key={date}>
           <div className="date-header">{date}</div>

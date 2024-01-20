@@ -16,7 +16,7 @@ const TopNavigation = ({}) => {
         >
             <div>
                 <img
-                    src="logoside.png"
+                    src="../logoside.png"
                     alt="Logo"
                     className="logo"
                     style={{ height: "40px" }}

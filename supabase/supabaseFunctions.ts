@@ -56,30 +56,72 @@ export const saveTwitterInfoInSupabase = async (
   }
 };
 
-export const getUsersWithPagination = async (
-  supabase: any,
-  address: string
-) => {
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .neq("address", address)
-      .limit(3);
+// export const getUsersWithPagination = async (
+//   supabase: any,
+//   address: string
+// ) => {
+//   try {
+//     const { data, error } = await supabase
+//       .from("users")
+//       .select("*")
+//       .neq("address", address)
+//       .limit(3);
 
-    if (error) {
-      console.error("this is error", error);
-      throw error;
-    }
+//     if (error) {
+//       console.error("this is error", error);
+//       throw error;
+//     }
 
-    console.log("data", data);
+//     console.log("data", data);
 
-    return data;
-  } catch (error) {
-    console.error("Error getting users:", error);
-    throw error;
+//     return data;
+//   } catch (error) {
+//     console.error("Error getting users:", error);
+//     throw error;
+//   }
+// };
+
+// export const getUsersWithPagination = async (supabase, address, searchTerm) => {
+//   let query = supabase
+//     .from('users')
+//     .select('*')
+//     .neq("address", address);
+
+//   // Add partial word search filter
+//   if (searchTerm && searchTerm.trim() !== '') {
+//     // Modify 'twitter_handle' and 'twitter_name' to the columns you want to search in
+//     query = query
+//       .or(`twitter_handle.ilike.%${searchTerm}%,twitter_name.ilike.%${searchTerm}%`);
+//   }
+
+//   const { data, error } = await query;
+//   if (error) {
+//     console.error('Error fetching users:', error);
+//     return [];
+//   }
+//   return data;
+// };
+export const getUsersWithPagination = async (supabase, address, searchTerm) => {
+  let query = supabase
+    .from('users')
+    .select('*, fts') // Temporarily select the fts column for debugging
+    .neq("address", address);
+
+  if (searchTerm && searchTerm.trim() !== '') {
+    const formattedSearchTerm = searchTerm.trim().split(/\s+/).map(word => `${word}:*`).join(' & ');
+    query = query
+      .textSearch('fts', formattedSearchTerm);
   }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+  return data;
 };
+
+
 
 export const sendMessage = async (
   supabase: SupabaseClient,

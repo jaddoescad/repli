@@ -1,5 +1,4 @@
-
-  export const TransactionMessage = ({
+export const TransactionMessage = ({
     hash,
     weiValue,
     isMine,
@@ -15,13 +14,6 @@
         <p>
           {hash ? `hash: ${hash}, value: ${weiValue}` : "Pending Transaction..."}
         </p>
-        <span style={{ fontSize: "10px", opacity: "0.7" }}>
-          {new Date(created_at.seconds * 1000).toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          })}
-        </span>
         <style jsx>{`
           .bubble {
             background-color: #f0f0f0;
@@ -31,6 +23,8 @@
             justify-content: space-between;
             display: block;
             width: fit-content;
+            max-width: 250px; /* max width for the bubble */
+            overflow-wrap: break-word; /* ensures words can be broken and wrap */
           }
           .mine {
             background-color: #a0c4ff;
@@ -40,3 +34,4 @@
       </div>
     );
   };
+  
