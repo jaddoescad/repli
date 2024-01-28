@@ -333,7 +333,7 @@ export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) =>
       )
     `)
     .eq('chat_room_id', chatRoomId)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
     .range((page - 1) * limit, page * limit - 1);
 
   if (error) {

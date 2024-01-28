@@ -1,6 +1,11 @@
 import { NextPage } from "next";
 import MainWrapper from "../../wrappers/MainWrapper";
-import { useAddress, useBalance, useContract, useContractWrite } from "@thirdweb-dev/react";
+import {
+  useAddress,
+  useBalance,
+  useContract,
+  useContractWrite,
+} from "@thirdweb-dev/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import {
@@ -30,7 +35,6 @@ const Home: NextPage = () => {
   const myAddress = useAddress();
   const [isLoading, setIsLoading] = useState(true); // Add a loading state
   const chatContainerRef = useRef(null); // Ref for the chat container
-
 
   const [page, setPage] = useState(1); // Add a page state
   const [hasMore, setHasMore] = useState(true); //
@@ -65,24 +69,19 @@ const Home: NextPage = () => {
 
   const loadMoreMessages = async (prevScrollHeight) => {
     if (!chatContainerRef.current) return;
-  
+
     setPage((prevPage) => prevPage + 1);
     await fetchData(page + 1);
-  
+
     // Use a timeout to ensure that the DOM has updated
     setTimeout(() => {
       if (!chatContainerRef.current) return;
-  
+
       const currentScrollHeight = chatContainerRef.current.scrollHeight;
-      chatContainerRef.current.scrollTop = currentScrollHeight - prevScrollHeight;
+      chatContainerRef.current.scrollTop =
+        currentScrollHeight - prevScrollHeight;
     }, 0); // Timeout with 0 delay allows the DOM to update
   };
-  
-  
-  
-  
-  
-  
 
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
@@ -117,7 +116,6 @@ const Home: NextPage = () => {
 
   return (
     <MainWrapper>
-
       {chatUser && <TopChatNavigation chatUser={chatUser} />}
 
       {/* Pass isLoading as a prop */}
@@ -175,18 +173,16 @@ const ChatList = ({
     }
   };
 
-
   const groupedMessages = groupMessagesByDate(chat);
 
   useEffect(() => {
     const container = chatContainerRef.current;
-    container?.addEventListener('scroll', handleScroll);
+    container?.addEventListener("scroll", handleScroll);
 
     return () => {
-      container?.removeEventListener('scroll', handleScroll);
+      container?.removeEventListener("scroll", handleScroll);
     };
   }, [isLoading, hasMore, chat.length]); // Add dependencies
-
 
   useEffect(() => {
     if (chatContainerRef.current && isInitialLoad && chat.length > 0) {
@@ -195,7 +191,7 @@ const ChatList = ({
       // Function to handle container mutations
       const handleMutate = (mutations) => {
         for (let mutation of mutations) {
-          if (mutation.type === 'childList' || mutation.type === 'attributes') {
+          if (mutation.type === "childList" || mutation.type === "attributes") {
             container.scrollTop = container.scrollHeight;
           }
         }
@@ -222,24 +218,29 @@ const ChatList = ({
     }
   }, [chat, isInitialLoad]);
 
-
   return (
-    <div ref={chatContainerRef} className="w-full h-full overflow-y-auto">
-        {isLoading && ( // Show loader when loading
-        <div className="
+    <div ref={chatContainerRef} className="w-full h-full overflow-y-auto pb-10">
+      {isLoading && ( // Show loader when loading
+        <div
+          className="
           flex
           justify-center
           items-center
           w-full
           my-4
-          
-        ">
+        "
+        >
           <Loader />
         </div>
       )}
       {Object.keys(groupedMessages).map((date) => (
         <div key={date}>
-          <div className="date-header">{date}</div>
+          <div className="
+            text-center
+            text-sm
+            mt-4
+            text-gray-500
+          ">{date}</div>
           {groupedMessages[date].map((userMessage) => (
             <>
               <MessageBubble
@@ -248,13 +249,17 @@ const ChatList = ({
                 created_at={userMessage.created_at}
                 isMine={userMessage.sender === myAddress}
               />
-
               <TransactionMessage
                 key={userMessage.id + "_contract"}
                 hash={userMessage.transaction_hash}
                 weiValue={userMessage.wei_value}
                 created_at={userMessage.created_at}
                 isMine={userMessage.sender === myAddress}
+                messageStatus={
+                  userMessage.sender === myAddress
+                    ? "Awaiting response"
+                    : "Respond and earn"
+                }
               />
             </>
           ))}
@@ -262,8 +267,6 @@ const ChatList = ({
       ))}
       <style jsx>{`
         .date-header {
-          text-align: center;
-          margin: 10px 0;
           color: #666;
         }
       `}</style>
@@ -357,7 +360,6 @@ const BottomNavigation = () => {
     </div>
   );
 };
-
 
 // This function will run at build time in production
 export const getServerSideProps = withAuth(async (ctx) => {

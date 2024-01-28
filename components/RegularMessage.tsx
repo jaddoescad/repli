@@ -1,41 +1,19 @@
+import { format } from "date-fns";
 
-export const MessageBubble = ({
-    message,
-    isMine,
-    created_at,
-  }: {
-    message: any;
-    isMine: any;
-    created_at: any;
-  }) => {
-    return (
-      <div className={`bubble ${isMine ? "mine" : ""}`}>
-        <div>{created_at}</div>
-  
+export const MessageBubble = ({ message, isMine, created_at }) => {
+  return (
+    <div className={`${isMine ? "text-right" : ""}`}>
+      <div
+        style={isMine ? { backgroundColor: "#A873E8" } : {}}
+        className={`p-3 mx-3 mb-1 mt-6 rounded-2xl text-white tracking-wide text-sm ${
+          isMine ? "ml-auto bg-purple-600" : "bg-gray-200"
+        } max-w-xs break-words inline-block`}
+      >
         <p>{message}</p>
-        <span style={{ fontSize: "10px", opacity: "0.7" }}>
-          {new Date(created_at).toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          })}
+        <span style={{ fontSize: "0.75rem" }} className=" text-gray-200">
+          {format(new Date(created_at), "hh:mm a")}
         </span>
-        <style jsx>{`
-          .bubble {
-            background-color: #f0f0f0;
-            margin: 10px;
-            padding: 10px;
-            border-radius: 10px;
-            justify-content: space-between;
-            display: block;
-            width: fit-content;
-          }
-          .mine {
-            background-color: #a0c4ff;
-            margin-left: auto;
-          }
-        `}</style>
       </div>
-    );
-  };
-  
+    </div>
+  );
+};
