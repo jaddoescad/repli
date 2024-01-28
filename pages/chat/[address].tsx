@@ -6,13 +6,14 @@ import {
   useContract,
   useContractWrite,
 } from "@thirdweb-dev/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import {
   getChatUserSupabase,
   onChatMessagesSupabase,
   sendMessage,
 } from "../../supabase/supabaseFunctions";
+import { debounce } from 'lodash';
 
 import { ChatContractAddress } from "../../constants/contract-addresses";
 import Cookies from "js-cookie";
@@ -126,9 +127,10 @@ const Home: NextPage = () => {
         chatContainerRef={chatContainerRef}
         loadMoreMessages={loadMoreMessages}
         hasMore={hasMore}
+        dataFullyLoaded={!isLoading}
       />
 
-      <BottomNavigation />
+      <BottomNavigation setChat={setChat} />
     </MainWrapper>
   );
 };
@@ -140,6 +142,7 @@ const ChatList = ({
   loadMoreMessages, // Function to load more messages
   hasMore, // Indicates if more messages are available
   chatContainerRef,
+  dataFullyLoaded,
 }: {
   chat: any[];
   myAddress: string;
@@ -147,6 +150,7 @@ const ChatList = ({
   loadMoreMessages: (prevScrollHeight: number) => void;
   hasMore: boolean;
   chatContainerRef: any;
+  dataFullyLoaded: boolean;
 }) => {
   const bottomListRef = useRef(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // New state variable for initial load
@@ -183,40 +187,26 @@ const ChatList = ({
       container?.removeEventListener("scroll", handleScroll);
     };
   }, [isLoading, hasMore, chat.length]); // Add dependencies
-
-  useEffect(() => {
-    if (chatContainerRef.current && isInitialLoad && chat.length > 0) {
-      const { current: container } = chatContainerRef;
-
-      // Function to handle container mutations
-      const handleMutate = (mutations) => {
-        for (let mutation of mutations) {
-          if (mutation.type === "childList" || mutation.type === "attributes") {
-            container.scrollTop = container.scrollHeight;
-          }
-        }
-      };
-
-      // Create an observer instance linked to the handleMutate callback
-      observer.current = new MutationObserver(handleMutate);
-
-      // Start observing the chat container for configured mutations
-      observer.current.observe(container, {
-        childList: true, // Observe direct children
-        subtree: true, // and lower descendants too
-        attributes: true, // Observe attributes changes
-      });
-
-      // Initial scroll to the bottom
-      container.scrollTop = container.scrollHeight;
-      setIsInitialLoad(false);
-
-      // Disconnect the observer on component unmount
-      return () => {
-        observer.current.disconnect();
-      };
+  
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      const scrollHeight = chatContainerRef.current.scrollHeight;
+      const height = chatContainerRef.current.clientHeight;
+      const maxScrollTop = scrollHeight - height;
+      chatContainerRef.current.scrollTop = maxScrollTop > 0 ? maxScrollTop : 0;
     }
-  }, [chat, isInitialLoad]);
+  };
+  const debouncedScrollToBottom = debounce(scrollToBottom, 100);
+
+
+  useLayoutEffect(() => {
+    if (dataFullyLoaded) {
+      debouncedScrollToBottom();
+    }
+  }, [dataFullyLoaded]);
+
+
+  
 
   return (
     <div ref={chatContainerRef} className="w-full h-full overflow-y-auto pb-10">
@@ -235,12 +225,16 @@ const ChatList = ({
       )}
       {Object.keys(groupedMessages).map((date) => (
         <div key={date}>
-          <div className="
+          <div
+            className="
             text-center
             text-sm
             mt-4
             text-gray-500
-          ">{date}</div>
+          "
+          >
+            {date}
+          </div>
           {groupedMessages[date].map((userMessage) => (
             <>
               <MessageBubble
@@ -275,7 +269,7 @@ const ChatList = ({
   );
 };
 
-const BottomNavigation = () => {
+const BottomNavigation = ({ setChat }) => {
   const { refetch } = useBalance();
 
   const router = useRouter();
@@ -319,7 +313,8 @@ const BottomNavigation = () => {
         text,
         0.000001,
         mutateAsync,
-        refetch
+        refetch,
+        setChat
       );
       setText(""); // Clear the text area after sending
     } catch (e) {

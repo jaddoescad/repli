@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chatui/core": "^2.4.2",
     "@supabase/supabase-js": "^2.39.2",
     "@thirdweb-dev/auth": "^4",
     "@thirdweb-dev/react": "^4.2.2",

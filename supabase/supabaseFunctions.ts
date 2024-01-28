@@ -130,12 +130,28 @@ export const sendMessage = async (
   message: string,
   weiValue: number,
   mutateAsync: any,
-  refetch: any
+  refetch: any,
+  setChat: React.Dispatch<React.SetStateAction<any[]>> // Add this parameter to update local state
 ) => {
   const order = checkOrder(userId, recipientId);
   const chatRoomId = "chat_" + order[0] + "_" + order[1];
+  const messageId = uuidv4(); // Unique identifier for the message
+
+  // Step 1: Insert the message into local state as 'pending'
+  const newMessage = {
+    id: messageId,
+    sender: userId,
+    recipient: recipientId,
+    message: message,
+    chat_room_id: chatRoomId,
+    status: 'pending', // Initial status
+    created_at: new Date().toISOString(),
+  };
+
+  setChat((prevMessages) => [...prevMessages, newMessage]);
+
   try {
-    // Update or create chat room
+    // Step 2: Update or create chat room
     let { data: chatRoomData, error: chatRoomError } = await supabase
       .from("chat_rooms")
       .upsert({
@@ -147,8 +163,7 @@ export const sendMessage = async (
 
     if (chatRoomError) throw chatRoomError;
 
-    const messageId = uuidv4();
-    // Send user message
+    // Step 3: Send user message to Supabase
     let { error: messageError } = await supabase.from("messages").insert({
       id: messageId,
       sender: userId,
@@ -159,13 +174,29 @@ export const sendMessage = async (
 
     if (messageError) throw messageError;
 
+    // Handle the sending of money
     sendMoney(mutateAsync, weiValue, messageId, userId, recipientId);
     refetch();
+
+    // Step 4: Update the message status to 'confirmed' in the local state
+    setChat((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, status: 'confirmed' } : msg
+      )
+    );
   } catch (error) {
     console.error("An error occurred:", error);
+    // Handle error
+    // Optionally, you can update the status of the message to 'failed' in the local state
+    setChat((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, status: 'failed' } : msg
+      )
+    );
     throw error;
   }
 };
+
 
 export const onChatMessagesSupabase = (
   supabase: SupabaseClient,
@@ -187,8 +218,19 @@ export const onChatMessagesSupabase = (
       (payload) => {
         console.log("New message received!", payload.new);
         if (payload.new.chat_room_id === chatRoomId) {
-          callback((prevMessages) => [...prevMessages, payload.new]);
-        }
+          callback((prevMessages) => {
+            const existingIndex = prevMessages.findIndex(m => m.id === payload.new.id);
+            if (existingIndex !== -1) {
+              // Update the existing message
+              const updatedMessages = [...prevMessages];
+              updatedMessages[existingIndex] = {...prevMessages[existingIndex], ...payload.new, status: 'confirmed'};
+              return updatedMessages;
+            } else {
+              // New message, add to the list
+              return [...prevMessages, {...payload.new, status: 'confirmed'}];
+            }
+          });
+                  }
       }
     )
     .on(
@@ -323,6 +365,9 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
 };
 
 export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) => {
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit - 1;
+
   const { data, error } = await supabase
     .from('messages')
     .select(`
@@ -333,8 +378,9 @@ export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) =>
       )
     `)
     .eq('chat_room_id', chatRoomId)
-    .order('created_at', { ascending: true })
-    .range((page - 1) * limit, page * limit - 1);
+    .order('created_at', { ascending: false })
+    // Use correct range for descending order
+    .range(startIndex, endIndex);
 
   if (error) {
     console.error("Error fetching initial messages: ", error);
@@ -347,6 +393,7 @@ export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) =>
     return formattedData;
   }
 };
+
 
 
 
