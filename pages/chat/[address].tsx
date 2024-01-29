@@ -57,9 +57,13 @@ const Home: NextPage = () => {
       page,
       limit
     );
+
+    
     if (moreMessages.length < limit) {
       setHasMore(false); // No more messages to load
     }
+
+
     if (page === 1) {
       setChat(moreMessages);
     } else {
@@ -187,7 +191,7 @@ const ChatList = ({
       container?.removeEventListener("scroll", handleScroll);
     };
   }, [isLoading, hasMore, chat.length]); // Add dependencies
-  
+
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       const scrollHeight = chatContainerRef.current.scrollHeight;
