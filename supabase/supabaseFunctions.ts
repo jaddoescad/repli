@@ -2,6 +2,17 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { sendMoney } from "../thirdweb/ContractMutations";
 import { checkOrder } from "../utils/utils";
 import { v4 as uuidv4 } from "uuid";
+import Chat, {
+  Bubble,
+  Card,
+  CardMedia,
+  CardText,
+  CardTitle,
+  InfiniteScroll,
+  useMessages,
+} from "@chatui/core";
+import { formatTransactionMessage } from "../components/TransactionMessage";
+
 
 export const getSupabaseUser = async (
   supabase: SupabaseClient,
@@ -103,25 +114,26 @@ export const saveTwitterInfoInSupabase = async (
 // };
 export const getUsersWithPagination = async (supabase, address, searchTerm) => {
   let query = supabase
-    .from('users')
-    .select('*, fts') // Temporarily select the fts column for debugging
+    .from("users")
+    .select("*, fts") // Temporarily select the fts column for debugging
     .neq("address", address);
 
-  if (searchTerm && searchTerm.trim() !== '') {
-    const formattedSearchTerm = searchTerm.trim().split(/\s+/).map(word => `${word}:*`).join(' & ');
-    query = query
-      .textSearch('fts', formattedSearchTerm);
+  if (searchTerm && searchTerm.trim() !== "") {
+    const formattedSearchTerm = searchTerm
+      .trim()
+      .split(/\s+/)
+      .map((word) => `${word}:*`)
+      .join(" & ");
+    query = query.textSearch("fts", formattedSearchTerm);
   }
 
   const { data, error } = await query;
   if (error) {
-    console.error('Error fetching users:', error);
+    console.error("Error fetching users:", error);
     return [];
   }
   return data;
 };
-
-
 
 export const sendMessage = async (
   supabase: SupabaseClient,
@@ -131,24 +143,33 @@ export const sendMessage = async (
   weiValue: number,
   mutateAsync: any,
   refetch: any,
-  setChat: React.Dispatch<React.SetStateAction<any[]>> // Add this parameter to update local state
+  appendMsg: any,
+  updateMsg: any
 ) => {
   const order = checkOrder(userId, recipientId);
   const chatRoomId = "chat_" + order[0] + "_" + order[1];
   const messageId = uuidv4(); // Unique identifier for the message
 
   // Step 1: Insert the message into local state as 'pending'
-  const newMessage = {
-    id: messageId,
-    sender: userId,
-    recipient: recipientId,
-    message: message,
-    chat_room_id: chatRoomId,
-    status: 'pending', // Initial status
-    created_at: new Date().toISOString(),
-  };
 
-  setChat((prevMessages) => [...prevMessages, newMessage]);
+  // setChat((prevMessages) => [...prevMessages, newMessage]);
+  appendMsg({
+    _id: messageId,
+    type: "text",
+    content: { text: message },
+    position: "right",
+    status: "loading",
+  });
+
+
+  appendMsg({
+    _id: "transaction_"+messageId,
+    type: "text",
+    content: { text: "Pending Transaction..." },
+    position: "right",
+    status: "loading",
+  });
+
 
   try {
     // Step 2: Update or create chat room
@@ -179,29 +200,243 @@ export const sendMessage = async (
     refetch();
 
     // Step 4: Update the message status to 'confirmed' in the local state
-    setChat((prevMessages) =>
-      prevMessages.map((msg) =>
-        msg.id === messageId ? { ...msg, status: 'confirmed' } : msg
-      )
-    );
+    updateMsg(messageId, {
+      _id: messageId,
+      type: "text",
+      content: { text: message },
+      position: "right",
+      status: "sent",
+    });
+    
   } catch (error) {
     console.error("An error occurred:", error);
     // Handle error
     // Optionally, you can update the status of the message to 'failed' in the local state
-    setChat((prevMessages) =>
-      prevMessages.map((msg) =>
-        msg.id === messageId ? { ...msg, status: 'failed' } : msg
-      )
-    );
+    updateMsg(messageId, {
+      _id: messageId,
+      type: "text",
+      content: { text: message },
+      position: "right",
+      status: "failed",
+    });
+
+    updateMsg(messageId+"_transaction", {
+      _id: "transaction_"+ messageId,
+      type: "text",
+      content: { text: "Transaction Failed" },
+      position: "right",
+      status: "failed",
+    });
+
     throw error;
   }
 };
 
+// export const sendMessage = async (
+//   supabase: SupabaseClient,
+//   userId: string,
+//   recipientId: string,
+//   message: string,
+//   weiValue: number,
+//   mutateAsync: any,
+//   refetch: any,
+//   setChat: React.Dispatch<React.SetStateAction<any[]>> // Add this parameter to update local state
+// ) => {
+//   const order = checkOrder(userId, recipientId);
+//   const chatRoomId = "chat_" + order[0] + "_" + order[1];
+//   const messageId = uuidv4(); // Unique identifier for the message
+
+//   // Step 1: Insert the message into local state as 'pending'
+//   const newMessage = {
+//     id: messageId,
+//     sender: userId,
+//     recipient: recipientId,
+//     message: message,
+//     chat_room_id: chatRoomId,
+//     status: 'pending', // Initial status
+//     created_at: new Date().toISOString(),
+//   };
+
+//   setChat((prevMessages) => [...prevMessages, newMessage]);
+
+//   try {
+//     // Step 2: Update or create chat room
+//     let { data: chatRoomData, error: chatRoomError } = await supabase
+//       .from("chat_rooms")
+//       .upsert({
+//         id: chatRoomId,
+//         participants: [userId, recipientId],
+//         last_message: message,
+//         last_message_timestamp: "NOW()",
+//       });
+
+//     if (chatRoomError) throw chatRoomError;
+
+//     // Step 3: Send user message to Supabase
+//     let { error: messageError } = await supabase.from("messages").insert({
+//       id: messageId,
+//       sender: userId,
+//       recipient: recipientId,
+//       message: message,
+//       chat_room_id: chatRoomId,
+//     });
+
+//     if (messageError) throw messageError;
+
+//     // Handle the sending of money
+//     sendMoney(mutateAsync, weiValue, messageId, userId, recipientId);
+//     refetch();
+
+//     // Step 4: Update the message status to 'confirmed' in the local state
+//     setChat((prevMessages) =>
+//       prevMessages.map((msg) =>
+//         msg.id === messageId ? { ...msg, status: 'confirmed' } : msg
+//       )
+//     );
+//   } catch (error) {
+//     console.error("An error occurred:", error);
+//     // Handle error
+//     // Optionally, you can update the status of the message to 'failed' in the local state
+//     setChat((prevMessages) =>
+//       prevMessages.map((msg) =>
+//         msg.id === messageId ? { ...msg, status: 'failed' } : msg
+//       )
+//     );
+//     throw error;
+//   }
+// };
+
+// export const onChatMessagesSupabase = (
+//   supabase: SupabaseClient,
+//   chatRoomId: string,
+//   callback: (messages: []) => void
+// ) => {
+//   const channel = `chatRooms:${chatRoomId}`;
+
+//   const unsubscribe = supabase
+//     .channel(channel)
+//     .on(
+//       "postgres_changes",
+//       {
+//         event: "INSERT",
+//         schema: "public",
+//         table: "messages",
+//         filter: `chat_room_id=eq.${chatRoomId}`,
+//       },
+//       (payload) => {
+//         console.log("New message received!", payload.new);
+//         if (payload.new.chat_room_id === chatRoomId) {
+//           callback((prevMessages) => {
+//             const existingIndex = prevMessages.findIndex(
+//               (m) => m.id === payload.new.id
+//             );
+//             if (existingIndex !== -1) {
+//               // Update the existing message
+//               const updatedMessages = [...prevMessages];
+//               updatedMessages[existingIndex] = {
+//                 ...prevMessages[existingIndex],
+//                 ...payload.new,
+//                 status: "confirmed",
+//               };
+//               return updatedMessages;
+//             } else {
+//               // New message, add to the list
+//               return [...prevMessages, { ...payload.new, status: "confirmed" }];
+//             }
+//           });
+//         }
+//       }
+//     )
+//     .on(
+//       "postgres_changes",
+//       { event: "INSERT", schema: "public", table: "transactions" },
+//       (payload) => {
+//         console.log("New transaction received!", payload.new);
+//         callback((prevMessages) =>
+//           prevMessages.map((message) => {
+//             console.log("Checking message", message.id, payload.new.message_id);
+//             if (message.id === payload.new.message_id) {
+//               // Add or update the transaction details for the message
+//               console.log("Updating message with transaction details", message);
+//               return { ...message, ...payload.new };
+//             }
+//             return message;
+//           })
+//         );
+//       }
+//     )
+//     .subscribe();
+
+//   return unsubscribe;
+// };
+
+
+// export const onChatMessagesSupabase = (
+//   supabase: SupabaseClient,
+//   chatRoomId: string,
+//   appendMsg: any,
+//   updateMsg: any,
+//   messagesRef: any,
+//   userId: string
+// ) => {
+//   const channel = `chatRooms:${chatRoomId}`;
+
+
+//   const unsubscribe = supabase
+//     .channel(channel)
+//     .on("postgres_changes", {
+//       event: "INSERT",
+//       schema: "public",
+//       table: "messages",
+//       filter: `chat_room_id=eq.${chatRoomId}`,
+//     }, (payload) => {
+//       console.log("New message received!", payload.new);
+//       if (payload.new.chat_room_id === chatRoomId) {
+//         // Check if the message already exists
+//           updateMsg(payload.new.id, {
+//             // ...existingMessage,
+//             // ...payload.new,
+//             _id: payload.new.id,
+//             type: "text",
+//             content: { text: payload.new.message },
+//             position: payload.new.sender === userId ? "right" : "left",
+//             status: "confirmed",
+//           });
+//         } else {
+//           // New message, add to the list
+//           appendMsg({
+//             _id: payload.new.id,
+//             type: "text",
+//             content: { text: payload.new.message },
+//             position: payload.new.sender === userId ? "right" : "left",
+//             status: "confirmed",
+//           });
+
+//           // If the message involves a transaction, add a pending transaction message
+//           if (payload.new.involvesTransaction) {
+//             appendMsg({
+//               _id: payload.new.id + "_transaction",
+//               type: "text",
+//               content: { text: "Pending Transaction..." },
+//               position: payload.new.sender === userId ? "right" : "left",
+//               status: "loading",
+//             });
+//           }
+        
+//       }
+//     })
+//     .subscribe();
+
+//   return unsubscribe;
+// };
 
 export const onChatMessagesSupabase = (
   supabase: SupabaseClient,
   chatRoomId: string,
-  callback: (messages: []) => void
+  appendMsg: any,
+  updateMsg: any,
+  messagesRef: any,
+  userId: string
 ) => {
   const channel = `chatRooms:${chatRoomId}`;
 
@@ -217,20 +452,36 @@ export const onChatMessagesSupabase = (
       },
       (payload) => {
         console.log("New message received!", payload.new);
-        if (payload.new.chat_room_id === chatRoomId) {
-          callback((prevMessages) => {
-            const existingIndex = prevMessages.findIndex(m => m.id === payload.new.id);
-            if (existingIndex !== -1) {
-              // Update the existing message
-              const updatedMessages = [...prevMessages];
-              updatedMessages[existingIndex] = {...prevMessages[existingIndex], ...payload.new, status: 'confirmed'};
-              return updatedMessages;
-            } else {
-              // New message, add to the list
-              return [...prevMessages, {...payload.new, status: 'confirmed'}];
-            }
+        const message = payload.new;
+        const existingMessageIndex = messagesRef.current.findIndex((m) => m._id === message.id);
+
+        if (existingMessageIndex !== -1) {
+          // Update the existing message
+          updateMsg(message.id, {
+            ...messagesRef.current[existingMessageIndex],
+            ...message,
+            status: "confirmed",
           });
-                  }
+        } else {
+          // New message, add to the list
+          appendMsg({
+            _id: message.id,
+            type: "text",
+            content: { text: message.message },
+            position: message.sender === userId ? "right" : "left",
+            status: "confirmed",
+          });
+          // Append a temporary "pending transaction" message if needed
+          if (message.shouldHaveTransaction) {
+            appendMsg({
+              _id: "transaction_"+message.id,
+              type: "text",
+              content: { text: "Pending Transaction..." },
+              position: message.sender === userId ? "right" : "left",
+              status: "loading",
+            });
+          }
+        }
       }
     )
     .on(
@@ -238,24 +489,39 @@ export const onChatMessagesSupabase = (
       { event: "INSERT", schema: "public", table: "transactions" },
       (payload) => {
         console.log("New transaction received!", payload.new);
-        callback((prevMessages) =>
-          prevMessages.map((message) => {
-            console.log("Checking message", message.id, payload.new.message_id);
-            if (message.id === payload.new.message_id) {
-              // Add or update the transaction details for the message
-              console.log("Updating message with transaction details", message);
-              return { ...message,  ...payload.new };
-            }
-            return message;
-          })
-        );
+        const transaction = payload.new;
+        console.log(messagesRef.current)
+        const associatedMessageIndex = messagesRef.current.findIndex((m) => m._id === transaction.id);
+        console.log("associatedMessageIndex", associatedMessageIndex);
+        console.log("messagesRef.current", messagesRef.current[associatedMessageIndex]);
+        console.log("new", payload.new);
+        if (associatedMessageIndex !== -1) {
+          const confirmedTransactionMessage = formatTransactionMessage(payload.new, userId)
+          updateMsg(transaction.id, confirmedTransactionMessage);
+          // Update the message with transaction details
+          // updateMsg(transaction.message_id, {
+          //   ...messagesRef.current[associatedMessageIndex],
+          //   transaction: transaction, // Add or update transaction details
+          //   status: transaction.status || "confirmed",
+          // });
+
+          // // Optionally, remove the temporary "pending transaction" message
+          // updateMsg(transaction.message_id + "_transaction", {
+          //   _id: transaction.message_id + "_transaction",
+          //   type: "custom",
+            
+          //   content: { text: "Transaction Confirmed" },
+          //   position: messagesRef.current[associatedMessageIndex].sender === userId ? "right" : "left",
+          //   status: "confirmed",
+          // });
+        }
       }
     )
     .subscribe();
 
-
   return unsubscribe;
 };
+
 
 export const getChatUserSupabase = async (
   supabase: SupabaseClient,
@@ -279,14 +545,12 @@ export const getChatUserSupabase = async (
   }
 };
 
-
-
-export const getMe = async (address: string, supabase: SupabaseClient,) => {
+export const getMe = async (address: string, supabase: SupabaseClient) => {
   try {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('address', address)
+      .from("users")
+      .select("*")
+      .eq("address", address)
       .single();
 
     if (error) {
@@ -305,9 +569,9 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
   try {
     // Get chat rooms where user is a participant
     let { data: chatRooms, error: chatRoomsError } = await supabase
-      .from('chat_rooms')
-      .select('*')
-      .contains('participants', [address]);
+      .from("chat_rooms")
+      .select("*")
+      .contains("participants", [address]);
 
     console.log("chatRooms", chatRooms);
 
@@ -322,9 +586,9 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
 
         // Get the other participant's user details
         let { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('address', otherParticipantAddress)
+          .from("users")
+          .select("*")
+          .eq("address", otherParticipantAddress)
           .single();
 
         if (userError) throw userError;
@@ -333,14 +597,14 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
         const timestamp = new Date(chatRoom.last_message_timestamp);
         const formattedTimestamp =
           timestamp.getFullYear() +
-          '-' +
-          ('0' + (timestamp.getMonth() + 1)).slice(-2) +
-          '-' +
-          ('0' + timestamp.getDate()).slice(-2) +
-          ' ' +
-          ('0' + timestamp.getHours()).slice(-2) +
-          ':' +
-          ('0' + timestamp.getMinutes()).slice(-2);
+          "-" +
+          ("0" + (timestamp.getMonth() + 1)).slice(-2) +
+          "-" +
+          ("0" + timestamp.getDate()).slice(-2) +
+          " " +
+          ("0" + timestamp.getHours()).slice(-2) +
+          ":" +
+          ("0" + timestamp.getMinutes()).slice(-2);
 
         return {
           id: chatRoom.id,
@@ -359,26 +623,33 @@ export const getMyChatRoomsSupabase = async (supabase, address) => {
 
     return chatRoomsWithUserDetails;
   } catch (error) {
-    console.error('Error getting chat rooms with user details:', error);
+    console.error("Error getting chat rooms with user details:", error);
     throw error;
   }
 };
 
-export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) => {
+export const fetchInitialMessages = async (
+  supabase,
+  chatRoomId,
+  page,
+  limit
+) => {
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit - 1;
 
   const { data, error } = await supabase
-    .from('messages')
-    .select(`
+    .from("messages")
+    .select(
+      `
       *,
       transactions (
         transaction_hash,
         wei_value
       )
-    `)
-    .eq('chat_room_id', chatRoomId)
-    .order('created_at', { ascending: false })
+    `
+    )
+    .eq("chat_room_id", chatRoomId)
+    .order("created_at", { ascending: false })
     // Use correct range for descending order
     .range(startIndex, endIndex);
 
@@ -393,7 +664,3 @@ export const fetchInitialMessages = async (supabase, chatRoomId, page, limit) =>
     return formattedData;
   }
 };
-
-
-
-

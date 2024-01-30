@@ -1,55 +1,43 @@
+import { Card, CardMedia, CardText, CardTitle } from "@chatui/core";
 import React from "react";
 
-export const TransactionMessage = ({
-  hash,
-  weiValue,
-  isMine,
-  created_at,
-}: {
-  hash: any;
-  weiValue: any;
-  isMine: any;
-  created_at: any;
-}) => {
-  const formattedValue = weiValue && (parseInt(weiValue) / 1e11).toFixed(2);
-  const responseText = isMine ? "Awaiting response" : "Respond and Earn"; // Changed text based on isMine
+// Define the function to fetch and append messages
+export const formatTransactionMessage = (message, myAddress) => {
+  if (!message.transaction_hash) {
+    // If there's no transaction hash, display a "pending transaction" message
+    return {
+      _id: "transaction_" + message.id,
+      type: "text",
+      content: { text: "Pending Transaction..." },
+      position: message.sender === myAddress ? "right" : "left",
+      status: "loading", // Optional: to indicate loading state
+    };
+  } else {
+    // Format and display the transaction message as before
+    const formattedValue =
+      message.wei_value && (parseInt(message.wei_value) / 1e11).toFixed(2);
+    const responseText =
+      message.sender === myAddress ? "Awaiting response" : "Respond and Earn";
 
-  return (
-    <div className={` ${isMine ? "text-right" : ""}`}>
-      <div
-        style={isMine ? { backgroundColor: "#A873E8", fontSize: "10px" } : {}}
-        className={`p-3 mx-3 rounded-2xl text-white font-medium tracking-wide ${
-          isMine ? "ml-auto bg-purple-600" : "bg-gray-200"
-        } max-w-xs break-words inline-block`}
-      >
-        {hash ? (
-          // When hash is present, show full details
-          <div className="flex">
-            <img
-              src="../money-bag.png"
-              alt="Logo"
-              className="logo"
-              style={{ height: "50px" }}
-            />
-            <div className="ml-4">
-              <p className="text-base">{responseText}</p> {/* Use responseText here */}
-              <p
-                style={{ color: "#F2B25D" }}
-                className="text-xl font-bold text-left"
-              >
-                {`${formattedValue} USDC`}
-              </p>
+    return {
+      type: "custom",
+      content: {
+        component: (
+          <Card>
+            <div className="h-20 p-2 pb-4">
+              <CardMedia
+                className="!bg-contain"
+                aspectRatio="wide"
+                image="../money-bag.png"
+              />
             </div>
-          </div>
-        ) : (
-          // When hash is not present, show "Pending Transaction..."
-          <div className="flex justify-center items-center" style={{ height: '100%' }}>
-            <p className="text-xl font-bold text-center" style={{ color: "#F2B25D" }}>
-              Pending Transaction...
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+            <CardTitle title={responseText} />
+            <CardText>{`${formattedValue} USDC`}</CardText>
+            {/* Add CardActions if needed */}
+          </Card>
+        ),
+      },
+      position: message.sender === myAddress ? "right" : "left",
+    };
+  }
 };

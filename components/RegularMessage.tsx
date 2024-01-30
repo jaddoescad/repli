@@ -1,5 +1,4 @@
 import { format } from "date-fns";
-import { use, useEffect } from "react";
 
 export const MessageBubble = ({ message, isMine, created_at }) => {
 

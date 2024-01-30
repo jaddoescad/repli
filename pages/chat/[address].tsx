@@ -58,7 +58,7 @@ const Home: NextPage = () => {
       limit
     );
 
-    
+
     if (moreMessages.length < limit) {
       setHasMore(false); // No more messages to load
     }
@@ -91,7 +91,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     if (!address || typeof address !== "string" || !myAddress) return;
 
-    const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
+    // const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
 
     const handleGetMyChatRooms = async () => {
       const chatUser_ = await getChatUserSupabase(supabase, address);
@@ -102,9 +102,9 @@ const Home: NextPage = () => {
 
     handleGetMyChatRooms();
 
-    return () => {
-      supabase.removeChannel(unsubscribe);
-    };
+    // return () => {
+    //   supabase.removeChannel(unsubscribe);
+    // };
   }, [address, myAddress]);
 
   useEffect(() => {
