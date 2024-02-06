@@ -14,7 +14,7 @@ export const CustomWalletButton = ({
 }) => {
     const stringValue = data?.value instanceof BigNumber ? data?.value.toString() : data?.value;
 
-    const formattedValue = stringValue && (parseInt(stringValue) / 1e18).toFixed(3);  const router = useRouter();
+    const formattedValue = stringValue && (parseInt(stringValue) / 1e14).toFixed(0);  const router = useRouter();
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
     return getSupabase(accessToken || "");

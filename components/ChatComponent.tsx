@@ -1,12 +1,13 @@
 import Chat, {
   Bubble,
-  Card,
-  CardMedia,
-  CardText,
-  CardTitle,
-  InfiniteScroll,
   useMessages,
+  useForwardRef,
+  useClickOutside,
+  useMount,
+  useComponents,
+  Input,
 } from "@chatui/core";
+
 import "@chatui/core/dist/index.css";
 import {
   fetchInitialMessages,
@@ -15,14 +16,15 @@ import {
   sendMessage,
 } from "../supabase/supabaseFunctions";
 import { getChatRoomId } from "../utils/utils";
-import { use, useEffect, useMemo, useState, useRef } from "react";
+import React, { use, useEffect, useMemo, useState, useRef } from "react";
 import Cookies from "js-cookie";
 import { access_token_cookie, getSupabase } from "../supabase/auth";
 import { useBalance, useContract, useContractWrite } from "@thirdweb-dev/react";
 import { ChatContractAddress } from "../constants/contract-addresses";
 import Loader from "./Loader";
 import { formatTransactionMessage } from "./TransactionMessage";
-
+import { TopChatNavigation } from "../components/TopChatNavigation";
+import { ChatUser } from "../types/types";
 
 const ChatApp = ({
   myAddress,
@@ -40,6 +42,7 @@ const ChatApp = ({
     updateMsg,
     resetList,
   } = useMessages([]);
+
   const chatRoomId = getChatRoomId(myAddress, recipientAddress);
   const supabase = useMemo(() => {
     const accessToken = Cookies.get(access_token_cookie);
@@ -63,20 +66,28 @@ const ChatApp = ({
   } = useContractWrite(contract, "deposit");
   const { refetch } = useBalance();
   const messagesRef = useRef(messages); // Initialize with the current messages
+  const composerRef = useRef(); // Create a ref for the composer
+  const [chatUser, setChatUser] = useState<ChatUser | null>(null);
 
   useEffect(() => {
     messagesRef.current = messages; // Update the ref to point to the new messages
   }, [messages]);
 
   useEffect(() => {
-    const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, appendMsg, updateMsg, messagesRef, myAddress);
+    const unsubscribe = onChatMessagesSupabase(
+      supabase,
+      chatRoomId,
+      appendMsg,
+      updateMsg,
+      messagesRef,
+      myAddress,
+      formatTransactionMessage
+    );
 
     return () => {
       supabase.removeChannel(unsubscribe);
     };
-    }, [myAddress, recipientAddress]);
-
-  
+  }, [myAddress, recipientAddress]);
 
   // Define the function to fetch and prepend messages
   const initializeChat = async () => {
@@ -92,7 +103,7 @@ const ChatApp = ({
 
     const formattedMessages = initialMessages.flatMap((message) => {
       const formattedMessage = {
-        _id : message.id,
+        _id: message.id,
         type: "text",
         content: { text: message.message },
         position: message.sender === myAddress ? "right" : "left",
@@ -103,7 +114,7 @@ const ChatApp = ({
 
       // If the message has a transaction, format and add the transaction message
       const transactionMessage = formatTransactionMessage(message, myAddress);
-      messageParts.push(transactionMessage);
+      if (transactionMessage) messageParts.push(transactionMessage);
 
       return messageParts;
     });
@@ -119,7 +130,11 @@ const ChatApp = ({
     if (myAddress && recipientAddress) {
       initializeChat();
     }
-  }, [myAddress, recipientAddress, supabase, chatRoomId, appendMsg, page]);
+  }, []);
+
+  useEffect(() => {
+    console.log(composerRef.current);
+  }, [composerRef]);
 
   const handleSend = async (type, val) => {
     if (type === "text" && val.trim()) {
@@ -145,6 +160,26 @@ const ChatApp = ({
       }
     }
   };
+
+
+  useEffect(() => {
+    if (!recipientAddress || typeof recipientAddress !== "string" || !myAddress) return;
+
+    // const unsubscribe = onChatMessagesSupabase(supabase, chatRoomId, setChat);
+
+    const handleGetMyChatRooms = async () => {
+      const chatUser_ = await getChatUserSupabase(supabase, recipientAddress);
+      if (chatUser_) {
+        setChatUser(chatUser_ as ChatUser);
+      }
+    };
+
+    handleGetMyChatRooms();
+
+    // return () => {
+    //   supabase.removeChannel(unsubscribe);
+    // };
+  }, [recipientAddress, myAddress]);
 
   function renderMessageContent(msg) {
     const { content, type, status } = msg;
@@ -180,6 +215,21 @@ const ChatApp = ({
       MESSAGES_LIMIT
     );
 
+    // Format the new messages similar to initializeChat
+    const formattedMessages = newMessages.reverse().flatMap((message) => {
+      const formattedMessage = {
+        _id: message.id,
+        type: "text",
+        content: { text: message.message },
+        position: message.sender === myAddress ? "right" : "left",
+      };
+      const messageParts = [formattedMessage];
+      const transactionMessage = formatTransactionMessage(message, myAddress);
+      if (transactionMessage) messageParts.push(transactionMessage);
+      return messageParts;
+    });
+
+    prependMsgs(formattedMessages); // Prepend the newly fetched and formatted messages
     setPage((prevPage) => prevPage + 1); // Increment the page
     setIsLoading(false); // Set loading state to false after fetching
 
@@ -187,40 +237,111 @@ const ChatApp = ({
     setHasMore(newMessages.length === MESSAGES_LIMIT);
   };
 
-  // Handle the onScroll event
-  const handleScroll = (event) => {
-    const { scrollTop } = event.target; // Get the scroll top position
+  const handleScroll = async (event) => {
+    const { scrollTop, scrollHeight } = event.target;
 
-    // Check if scrolled to the top and if more messages are available
     if (scrollTop === 0 && hasMore) {
-      loadMoreMessages();
+      const currentScrollHeight = scrollHeight;
+      await loadMoreMessages();
+
+      requestAnimationFrame(() => {
+        const newScrollHeight = event.target.scrollHeight;
+        const scrollOffset = newScrollHeight - currentScrollHeight;
+        event.target.scrollTop = scrollTop + scrollOffset;
+      });
     }
   };
 
   return (
-    <Chat
-      navbar={{ title: "Assistant" }}
-      messages={messages}
-      renderMessageContent={renderMessageContent}
-      onSend={handleSend}
-      locale="en-US"
-      placeholder="Type a message..."
-      loadMoreText="scroll to load more"
-      onScroll={handleScroll}
-      renderBeforeMessageList={() =>
-        isLoading && (
-          <div className="flex justify-center items-center">
-            <p
-              className="text-xl font-bold text-center"
-              style={{ color: "#F2B25D" }}
+    <>
+      {chatUser && (
+        <Chat
+          navbar={{ title: "Assistant" }}
+          messages={messages}
+          renderMessageContent={renderMessageContent}
+          onSend={handleSend}
+          locale="en-US"
+          placeholder="Type a message..."
+          loadMoreText="Load earlier messages"
+          onScroll={handleScroll}
+          onAccessoryToggle={() => console.log("Accessory Toggled")}
+          onBackBottomClick={() => console.log("Back Bottom Clicked")}
+          onBackBottomShow={() => console.log("Back Bottom Shown")}
+          quickRepliesVisible={true}
+          wideBreakpoint="40em"
+          Composer={Composer}
+          renderNavbar={() => <TopChatNavigation chatUser={chatUser} />}
+          rightAction={
+            <button
+              onClick={() => console.log("Right Action Clicked")}
+              style={{ color: "white", backgroundColor: "purple" }}
             >
-              Loading...
-            </p>
-          </div>
-        )
-      }
-    />
+              Right
+            </button>
+          }
+          renderBeforeMessageList={() =>
+            isLoading && (
+              <div className="flex justify-center items-center">
+                <p
+                  className="text-xl font-bold text-center"
+                  style={{ color: "#F2B25D" }}
+                >
+                  Loading...
+                </p>
+              </div>
+            )
+          }
+        />
+      )}
+    </>
   );
 };
 
 export default ChatApp;
+
+const Composer = React.memo(({ onSend, placeholder }) => {
+  const [message, setMessage] = useState("");
+
+  const handleInputChange = (message: string) => {
+    setMessage(message);
+  };
+
+  const handleSend = () => {
+    if (message.trim()) {
+      onSend("text", message);
+      setMessage("");
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="flex m-3">
+      <Input
+        type="text"
+        value={message}
+        onChange={handleInputChange}
+        onKeyPress={handleKeyPress}
+        placeholder={placeholder}
+      />
+      <button
+        onClick={handleSend}
+        style={{
+          background: "purple",
+          marginLeft: "10px",
+          borderRadius: "20px",
+          color: "white",
+          border: "none",
+          padding: "6px 10px",
+          cursor: "pointer",
+        }}
+      >
+        Send
+      </button>{" "}
+    </div>
+  );
+});

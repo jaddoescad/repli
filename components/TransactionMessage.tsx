@@ -3,8 +3,10 @@ import React from "react";
 
 // Define the function to fetch and append messages
 export const formatTransactionMessage = (message, myAddress) => {
+
   if (!message.transaction_hash) {
     // If there's no transaction hash, display a "pending transaction" message
+    console.log("message", message);
     return {
       _id: "transaction_" + message.id,
       type: "text",
@@ -32,7 +34,7 @@ export const formatTransactionMessage = (message, myAddress) => {
               />
             </div>
             <CardTitle title={responseText} />
-            <CardText>{`${formattedValue} USDC`}</CardText>
+            <CardText>{`${formattedValue/100} USDC`}</CardText>
             {/* Add CardActions if needed */}
           </Card>
         ),

@@ -47,6 +47,7 @@ export default function Login() {
             },
             onLogin: async (token: string) => {
               //parse jwt token
+               
               const payload = jwt.decode(token) as JwtPayload;
               const address = payload.sub;
 

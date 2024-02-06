@@ -6,11 +6,21 @@ import { access_token_cookie } from "../../../supabase/auth";
 import { NextApiRequest, NextApiResponse } from "next";
 import { createSupabaseServer } from "../../../supabase/createSupabaseServer";
 
+
 export default async function customAuthHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  //  30 minutes
+  const tokenDurationInSeconds = 60 * 30; // Token valid for 30 minutes
+  const refreshIntervalInSeconds = 60 * 5; // Refresh every 5 minutes
+
   const { ThirdwebAuthHandler, getUser } = ThirdwebAuth({
+    
+    authOptions: {
+      tokenDurationInSeconds: tokenDurationInSeconds, // Token valid for 30 minutes
+      refreshIntervalInSeconds: refreshIntervalInSeconds, // Refresh every 5 minutes
+    },
     domain:
       process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN || "http://localhost:3000",
     wallet: new PrivateKeyWallet(process.env.THIRDWEB_AUTH_PRIVATE_KEY || ""),
@@ -44,10 +54,12 @@ export default async function customAuthHandler(
 
           user = newUser[0];
         }
+        const expirationTime = Math.floor(Date.now() / 1000) + tokenDurationInSeconds;
 
         const supabaseJWT = jwt.sign(
+          
           {
-            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+            exp: expirationTime,
             aud: "authenticated",
             role: "authenticated",
             ...user,
